@@ -1,0 +1,8 @@
+.sidebar{background:#0b1530;border-right:1px solid var(--border);padding:18px 12px}
+.sidebar__brand{color:#dbeafe;margin-bottom:10px}
+.brand-mini{display:inline-block;background:#0b1220;border:1px solid #23314d;padding:6px 10px;border-radius:8px;font-weight:700;color:#e2e8f0}
+.menu{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.menu__item{padding:10px 12px;border-radius:10px;display:flex;gap:10px;align-items:center;color:#e2e8f0}
+.menu__item:hover{background:#112244}
+.menu__item.active{background:#1e3a8a;color:#fff}
+.ico{width:18px;text-align:center;opacity:.95}

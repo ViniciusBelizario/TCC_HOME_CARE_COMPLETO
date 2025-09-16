@@ -1,0 +1,10 @@
+    </section>
+  </main>
+</div>
+
+<script src="/public/js/app.js"></script>
+<% if (typeof pageJs !== 'undefined') { pageJs.forEach(src => { %>
+  <script src="<%= src %>"></script>
+<% }) } %>
+</body>
+</html>

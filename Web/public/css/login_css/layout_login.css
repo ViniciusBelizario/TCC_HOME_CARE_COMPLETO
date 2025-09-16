@@ -1,0 +1,2 @@
+.login-bg{background:radial-gradient(1000px 500px at 70% -10%,#18355f,transparent),linear-gradient(120deg,#0b1220,#0f172a 60%)}
+.login-card{width:min(420px,92vw);padding:22px;border-radius:16px;border:1px solid var(--border);background:var(--panel);box-shadow:var(--shadow)}

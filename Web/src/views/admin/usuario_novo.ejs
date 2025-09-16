@@ -1,0 +1,31 @@
+<%- include('../layouts/top', { active, title: 'HOME CARE — Novo Usuário' }) %>
+
+<div class="card">
+  <h3>Cadastrar Usuário</h3>
+
+  <% if (error) { %>
+    <p class="msg-error"><%= error %></p>
+  <% } %>
+
+  <form method="POST" action="/admin/usuarios" class="form" autocomplete="off" style="display:grid;gap:10px;max-width:520px;">
+    <input class="input" name="name" placeholder="Nome" required />
+    <input class="input" name="email" type="email" placeholder="E-mail" required />
+    <input class="input" name="cpf" maxlength="14" placeholder="CPF (000.000.000-00)" />
+    <input class="input" name="password" type="password" placeholder="Senha temporária" required />
+
+    <label>Papel</label>
+    <select class="input" name="role" required>
+      <option value="USUARIO">USUÁRIO</option>
+      <option value="ATENDENTE">ATENDENTE</option>
+      <option value="MEDICO">MÉDICO</option>
+      <option value="ADMIN">ADMIN</option>
+    </select>
+
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-primary" type="submit">Salvar</button>
+      <a class="btn" href="/admin/usuarios">Cancelar</a>
+    </div>
+  </form>
+</div>
+
+<%- include('../layouts/bottom') %>

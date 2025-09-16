@@ -1,0 +1,4 @@
+.card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
+.stat{display:flex;flex-direction:column;gap:4px}
+.stat strong{font-size:28px}
+.chart-placeholder{height:120px;display:grid;place-items:center;background:var(--panel-2);border:1px dashed #2b3446;border-radius:10px;color:#9fb5d8}

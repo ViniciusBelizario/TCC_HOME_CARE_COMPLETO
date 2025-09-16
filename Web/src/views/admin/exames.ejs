@@ -1,0 +1,77 @@
+<%- include('../layouts/top', {
+  active,
+  title: 'HOME CARE — Exames / Prontuário',
+  pageCss: ['/public/css/admin_css/pages/exames.css'],
+  pageJs:  ['/public/js/exams.js']
+}) %>
+
+<div class="exams">
+  <aside class="exams__aside">
+    <div class="card">
+      <h3>Buscar Paciente por CPF</h3>
+      <div class="row">
+        <input class="input" id="cpfInput" placeholder="000.000.000-00" maxlength="14" />
+        <button class="btn btn-primary" id="btnBuscarCPF">Buscar</button>
+      </div>
+      <p class="muted">Dica: digite com pontos e traço ou só números.</p>
+    </div>
+
+    <div class="card">
+      <h3>Ações Rápidas</h3>
+      <button class="btn action" id="btnAddExam">Adicionar Exame</button>
+      <button class="btn action" id="btnAddEval">Adicionar Avaliação</button>
+    </div>
+  </aside>
+
+  <section class="exams__content">
+    <div class="card">
+      <h3 id="pacienteTitulo">Nenhum paciente selecionado</h3>
+
+      <div id="areaPaciente" class="hidden">
+        <div class="grid grid-3">
+          <div class="box-info">
+            <h4>Dados do Paciente</h4>
+            <div id="pacienteInfo"></div>
+          </div>
+
+          <div class="box-info">
+            <h4>Enviar Exame/Prontuário</h4>
+            <div class="uploader">
+              <input type="file" id="fileInput" />
+              <button class="btn btn-primary" id="btnUploadFile">Carregar</button>
+            </div>
+            <p class="muted">Formatos comuns aceitos (pdf, jpg, png, docx...).</p>
+          </div>
+
+          <div class="box-info">
+            <h4>Nova Avaliação</h4>
+            <div class="row">
+              <select class="input" id="evalScore">
+                <option value="5">5 - Excelente</option>
+                <option value="4">4 - Bom</option>
+                <option value="3">3 - Regular</option>
+                <option value="2">2 - Ruim</option>
+                <option value="1">1 - Péssimo</option>
+              </select>
+              <input class="input" id="evalNotes" placeholder="Observações (opcional)" />
+              <button class="btn btn-primary" id="evalSave">Salvar</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-2 mt">
+          <div class="card">
+            <h3>Arquivos (Exames / Prontuário)</h3>
+            <ul id="fileList" class="list"></ul>
+          </div>
+          <div class="card">
+            <h3>Avaliações de Atendimento</h3>
+            <div id="evalList" class="list"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<%- include('../layouts/bottom') %>

@@ -1,0 +1,42 @@
+<%- include('../layouts/top', { active, title: 'HOME CARE — Usuários' }) %>
+
+<div class="toolbar" style="display:flex;align-items:center;gap:10px;">
+  <form method="GET" action="/admin/usuarios" style="display:flex;gap:8px;">
+    <input class="input" name="q" value="<%= q || '' %>" placeholder="Buscar usuários" />
+    <button class="btn" type="submit">Buscar</button>
+  </form>
+
+  <% if (isAdmin || isAtendente) { %>
+    <a href="/admin/usuarios/novo" class="btn btn-primary">+ Novo Usuário</a>
+  <% } %>
+</div>
+
+<div class="card">
+  <table class="table" id="userTable">
+    <thead>
+      <tr>
+        <th data-key="name">Nome</th>
+        <th data-key="cpf">CPF</th>
+        <th data-key="email">E-mail</th>
+        <th data-key="role">Papel</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if (!users || users.length === 0) { %>
+        <tr><td colspan="5">Nenhum usuário encontrado.</td></tr>
+      <% } %>
+      <% (users || []).forEach(u => { %>
+        <tr>
+          <td><%= u.name %></td>
+          <td><%= u.cpf || '—' %></td>
+          <td><%= u.email %></td>
+          <td><%= u.role %></td>
+          <td><a href="/admin/exames" onclick="localStorage.setItem('focusCPF','<%= u.cpf || '' %>')" >Exames</a></td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+
+<%- include('../layouts/bottom') %>

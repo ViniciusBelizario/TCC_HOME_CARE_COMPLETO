@@ -1,0 +1,6 @@
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  background:linear-gradient(90deg,#1e3a8a,#1d4ed8); /* azul mais vivo */
+  padding:12px 18px;color:#fff;position:sticky;top:0;z-index:10
+}
+.title{margin:0;font-size:20px;letter-spacing:.5px}

@@ -1,0 +1,24 @@
+.reports{display:grid;grid-template-columns:320px 1fr;gap:16px}
+.reports__aside{display:flex;flex-direction:column;gap:16px}
+.reports__content{min-height:360px}
+
+.report-grid{display:grid;grid-template-columns:1fr;gap:10px}
+.report-item{display:block;text-align:left;background:var(--panel-2);border:1px solid var(--border);border-radius:10px;padding:10px;cursor:pointer}
+.report-item:hover{filter:brightness(1.05)}
+
+.patient-search h4{margin:0 0 8px}
+.patients li button{width:100%;text-align:left;border:1px solid var(--border);background:var(--panel-2);border-radius:10px;padding:10px;color:inherit;cursor:pointer}
+.patients li button:hover{filter:brightness(1.05)}
+small{color:#94a3b8}
+
+.hidden{display:none}
+.mt{margin-top:10px}
+
+.tabs{display:flex;gap:8px;margin:10px 0}
+.tab{border:1px solid #334155;border-radius:10px;padding:8px 12px;background:transparent;color:var(--text);cursor:pointer}
+.tab.active{background:#1e3a8a;color:#fff;border-color:#1e3a8a}
+
+.tab-pane{display:none}
+.tab-pane.is-visible{display:block}
+
+.uploader{display:flex;gap:8px;margin:8px 0}

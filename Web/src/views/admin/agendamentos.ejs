@@ -1,0 +1,15 @@
+<%- include('../layouts/top', { active, title: 'HOME CARE — Agendamentos' }) %>
+
+<div class="card">
+  <h3 style="margin-bottom:10px;">Agendamentos</h3>
+  <ul class="list">
+    <% if (!pendings || pendings.length === 0) { %>
+      <li>Nenhum agendamento encontrado.</li>
+    <% } %>
+    <% (pendings || []).forEach(p => { %>
+      <li><strong><%= p.user %></strong> — <%= p.service %> — <%= p.date %> <%= p.time %></li>
+    <% }) %>
+  </ul>
+</div>
+
+<%- include('../layouts/bottom') %>

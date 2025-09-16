@@ -1,0 +1,45 @@
+<%- include('../layouts/top', { active, title: 'HOME CARE — Dashboard' }) %>
+
+<div class="grid grid-4">
+  <div class="card stat"><strong><%= stats.totalUsers %></strong><span>Usuários</span></div>
+  <div class="card stat"><strong><%= stats.scheduled %></strong><span>Agendamentos Marcados</span></div>
+  <div class="card stat"><strong><%= stats.finished %></strong><span>Agendamentos Concluídos</span></div>
+  <div class="card"><div class="chart-placeholder">Agendamentos ao longo do tempo</div></div>
+</div>
+
+<div class="grid grid-3">
+  <div class="card">
+    <h3>Agendamentos Pendentes</h3>
+    <table class="table">
+      <thead><tr><th>Usuário</th><th>Serviço</th><th>Data</th><th>Hora</th></tr></thead>
+      <tbody>
+        <% (pendings || []).forEach(p => { %>
+          <tr><td><%= p.user %></td><td><%= p.service %></td><td><%= p.date %></td><td><%= p.time %></td></tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Usuários Recentes</h3>
+    <table class="table">
+      <thead><tr><th>Nome</th><th>Papel</th></tr></thead>
+      <tbody>
+        <% (recentUsers || []).forEach(u => { %>
+          <tr><td><%= u.name %></td><td><%= u.role %></td></tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Agendamentos Recentes</h3>
+    <ul class="list">
+      <% (recentAppts || []).forEach(a => { %>
+        <li><strong><%= a.user %></strong> — <%= a.serv %> — <%= a.quando %></li>
+      <% }) %>
+    </ul>
+  </div>
+</div>
+
+<%- include('../layouts/bottom') %>

@@ -1,0 +1,12 @@
+.exams{display:grid;grid-template-columns:320px 1fr;gap:16px}
+.exams__aside{display:flex;flex-direction:column;gap:16px}
+.box-info{background:var(--panel-2);border:1px solid var(--border);border-radius:10px;padding:10px}
+
+.row{display:flex;gap:8px;align-items:center}
+.mt{margin-top:12px}
+.hidden{display:none}
+.muted{color:#c7d2fe}
+
+.uploader{display:flex;gap:8px;align-items:center}
+#fileList li a{color:#bfdbfe}
+#evalList .card{background:var(--panel-2);border:1px solid var(--border);border-radius:10px;padding:10px}

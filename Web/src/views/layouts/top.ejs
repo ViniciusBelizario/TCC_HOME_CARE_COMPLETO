@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title><%= typeof title !== 'undefined' ? title : 'HOME CARE — Admin' %></title>
+
+  <!-- CSS base + tela específica -->
+  <link rel="stylesheet" href="/public/css/base/reset.css" />
+  <link rel="stylesheet" href="/public/css/base/variables.css" />
+  <link rel="stylesheet" href="/public/css/base/typography.css" />
+  <link rel="stylesheet" href="/public/css/utilities/helpers.css" />
+
+  <!-- Admin layout/componentes -->
+  <link rel="stylesheet" href="/public/css/admin_css/layout/layout_base.css" />
+  <link rel="stylesheet" href="/public/css/admin_css/layout/sidebar.css" />
+  <link rel="stylesheet" href="/public/css/admin_css/layout/topbar.css" />
+  <link rel="stylesheet" href="/public/css/admin_css/layout/grid.css" />
+  <link rel="stylesheet" href="/public/css/admin_css/components/buttons.css" />
+  <link rel="stylesheet" href="/public/css/admin_css/components/cards.css" />
+  <link rel="stylesheet" href="/public/css/admin_css/components/table.css" />
+  <link rel="stylesheet" href="/public/css/admin_css/components/search.css" />
+  <link rel="stylesheet" href="/public/css/admin_css/components/lists.css" />
+
+  <% if (typeof pageCss !== 'undefined') { pageCss.forEach(href => { %>
+    <link rel="stylesheet" href="<%= href %>" />
+  <% }) } %>
+</head>
+<body class="dark">
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar__brand"><span class="brand-mini">Admin</span></div>
+    <nav class="menu">
+      <a href="/admin/dashboard" class="menu__item <%= active==='dashboard' ? 'active' : '' %>"><span class="ico">▣</span> Dashboards</a>
+
+      <% if (isAdmin || isAtendente) { %>
+        <a href="/admin/usuarios" class="menu__item <%= active==='users' ? 'active' : '' %>"><span class="ico">👤</span> Usuários</a>
+      <% } %>
+
+      <% if (isAdmin || isAtendente || isMedico) { %>
+        <a href="/admin/agendamentos" class="menu__item <%= active==='appointments' ? 'active' : '' %>"><span class="ico">▦</span> Agendamentos</a>
+        <a href="/admin/exames" class="menu__item <%= active==='exams' ? 'active' : '' %>"><span class="ico">🧪</span> Exames / Prontuário</a>
+      <% } %>
+
+      <% if (isAdmin || isMedico) { %>
+        <a href="/admin/relatorios" class="menu__item <%= active==='reports' ? 'active' : '' %>"><span class="ico">▸</span> Relatórios</a>
+      <% } %>
+    </nav>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <h1 class="title">HOME CARE</h1>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <% if (user) { %>
+          <span class="muted"><strong><%= user.name %></strong> — <%= user.role %></span>
+        <% } %>
+        <form method="POST" action="/logout"><button class="btn btn--outline">Sair</button></form>
+      </div>
+    </header>
+
+    <section class="view is-visible">

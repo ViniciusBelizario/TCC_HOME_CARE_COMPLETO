@@ -14,16 +14,5 @@ services:
       - "3306:3306"
     volumes:
       - db_data:/var/lib/mysql
-      - ./backups:/backup # Monta a pasta local 'backups' dentro do container
-  
-  backup:
-    image: busybox
-    container_name: ecommerce_backup
-    volumes:
-      - db_data:/data
-      - ./backups:/backup
-    command: ["/bin/sh", "-c", "tar czf /backup/db_data_backup.tar.gz -C /data ."]
-    restart: "no" # Executa apenas quando chamado
-
 volumes:
   db_data:

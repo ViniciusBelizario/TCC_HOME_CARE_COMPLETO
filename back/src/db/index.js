@@ -1,3 +1,4 @@
+//src\db\index.js
 const { Sequelize } = require('sequelize');
 const { loadEnv } = require('../config/env');
 

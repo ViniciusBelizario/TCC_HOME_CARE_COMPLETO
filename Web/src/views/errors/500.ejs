@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <title>Erro interno</title>
+  <link rel="stylesheet" href="/public/css/base/reset.css" />
+  <link rel="stylesheet" href="/public/css/base/variables.css" />
+  <link rel="stylesheet" href="/public/css/base/typography.css" />
+</head>
+<body class="dark" style="display:flex;align-items:center;justify-content:center;min-height:100vh;">
+  <div class="card" style="max-width:720px;padding:24px;">
+    <h2>Opa, algo deu errado.</h2>
+    <p>Tente novamente em instantes.</p>
+    <% if (typeof error !== 'undefined' && error) { %>
+      <pre style="white-space:pre-wrap;background:#0b1220;padding:12px;border-radius:8px;margin-top:12px;">
+<%= (error.stack || error.message || String(error)) %>
+      </pre>
+    <% } %>
+    <a class="btn" href="/">Voltar</a>
+  </div>
+</body>
+</html>

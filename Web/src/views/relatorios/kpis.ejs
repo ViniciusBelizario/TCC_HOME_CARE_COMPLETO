@@ -1,0 +1,31 @@
+<%- include('../layouts/top', { active: 'reports', title: 'Relatórios — KPIs' }) %>
+<div class="card" style="max-width:1080px;margin:0 auto;">
+  <h3>KPIs gerais</h3>
+
+  <form method="GET" action="/admin/relatorios/kpis" class="form" style="display:grid;gap:10px;margin-bottom:12px;">
+    <div class="form-grid" style="grid-template-columns:1fr 1fr;">
+      <input class="input" type="datetime-local" name="from" value="<%= filters.from || '' %>" required />
+      <input class="input" type="datetime-local" name="to"   value="<%= filters.to   || '' %>" required />
+    </div>
+    <div class="form-actions" style="justify-content:flex-end;">
+      <a class="btn" href="/admin/relatorios">Voltar</a>
+      <button class="btn btn-primary" type="submit">Gerar</button>
+    </div>
+  </form>
+
+  <% if (error) { %><p class="msg-error"><%= error %></p><% } %>
+
+  <% if (data) { %>
+    <div class="grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;">
+      <div class="card"><strong><%= data.total %></strong><div>Total</div></div>
+      <div class="card"><strong><%= data.requested %></strong><div>Solicitadas</div></div>
+      <div class="card"><strong><%= data.accepted %></strong><div>Aceitas</div></div>
+      <div class="card"><strong><%= data.denied %></strong><div>Negadas</div></div>
+      <div class="card"><strong><%= data.canceled %></strong><div>Canceladas</div></div>
+      <div class="card"><strong><%= data.completed %></strong><div>Concluídas</div></div>
+      <div class="card"><strong><%= data.avgDurationMin %> min</strong><div>Duração média</div></div>
+      <div class="card"><strong><%= (Number(data.utilizationRate||0)*100).toFixed(1) %>%</strong><div>Taxa de uso</div></div>
+    </div>
+  <% } %>
+</div>
+<%- include('../layouts/bottom') %>

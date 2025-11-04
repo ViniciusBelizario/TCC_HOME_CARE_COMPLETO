@@ -1,0 +1,89 @@
+<%- include('../layouts/top', { active, title: 'Agendamentos — Listar' }) %>
+
+<div class="card" style="max-width:1080px;margin:0 auto;">
+  <h3>Listar e Gerenciar</h3>
+
+  <% if (error) { %><p class="msg-error"><%= error %></p><% } %>
+  <% if (ok) { %><p class="msg-ok"><%= ok %></p><% } %>
+
+  <form method="GET" action="/admin/agendamentos/listar" class="form" style="display:grid;gap:10px;margin-bottom:12px;">
+    <div class="form-grid" style="grid-template-columns: 2fr 1fr 1fr;">
+      <select class="input" name="doctorId" required>
+        <option value="">Selecione o médico</option>
+        <% (doctors||[]).forEach(d => { %>
+          <option value="<%= d.id %>" <%= String(filters.doctorId||'')===String(d.id) ? 'selected' : '' %>>
+            <%= d.name %> — <%= d.specialty %> (<%= d.crm %>)
+          </option>
+        <% }) %>
+      </select>
+      <input class="input" type="datetime-local" name="from" value="<%= filters.from %>" required />
+      <input class="input" type="datetime-local" name="to" value="<%= filters.to %>" required />
+    </div>
+    <div class="form-actions" style="justify-content:flex-end;">
+      <a class="btn" href="/admin/agendamentos">Voltar</a>
+      <button class="btn btn-primary" type="submit">Buscar</button>
+    </div>
+  </form>
+
+  <div class="card">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Médico</th>
+          <th>Início</th>
+          <th>Fim</th>
+          <th>Status</th>
+          <th style="width:220px;">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if ((items||[]).length === 0) { %>
+          <tr><td colspan="6" style="text-align:center;color:#9aa4b2;">Nenhum horário no intervalo.</td></tr>
+        <% } %>
+
+        <% (items||[]).forEach(it => { %>
+          <tr>
+            <td><%= it.id %></td>
+            <td><%= it.doctor?.name || '-' %></td>
+            <td><%= new Date(it.startsAt).toLocaleString() %></td>
+            <td><%= new Date(it.endsAt).toLocaleString() %></td>
+            <td><%= it.status || (it.appointmentId ? 'RESERVED' : 'FREE') %></td>
+            <td>
+              <form method="POST" action="/admin/agendamentos/apagar/<%= it.id %>" style="display:inline;">
+                <button class="btn btn--outline btn-small" type="submit">Apagar</button>
+              </form>
+
+              <% if (it.appointmentId) { %>
+                <form method="POST" action="/admin/agendamentos/confirmar/<%= it.appointmentId %>" style="display:inline;margin-left:6px;">
+                  <button class="btn btn-primary btn-small" type="submit">Confirmar</button>
+                </form>
+              <% } %>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card" style="margin-top:12px;">
+    <h4>Apagar período (somente horários <em>não usados</em>)</h4>
+    <form method="POST" action="/admin/agendamentos/apagar-range" class="form" style="display:grid;gap:10px;">
+      <div class="form-grid" style="grid-template-columns: 2fr 1fr 1fr;">
+        <select class="input" name="doctorId" required>
+          <option value="">Selecione o médico</option>
+          <% (doctors||[]).forEach(d => { %>
+            <option value="<%= d.id %>"><%= d.name %> — <%= d.specialty %> (<%= d.crm %>)</option>
+          <% }) %>
+        </select>
+        <input class="input" type="datetime-local" name="from" required />
+        <input class="input" type="datetime-local" name="to" required />
+      </div>
+      <div class="form-actions" style="justify-content:flex-end;">
+        <button class="btn btn--outline" type="submit">Apagar período</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<%- include('../layouts/bottom') %>

@@ -5,28 +5,39 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>HOME CARE — Login</title>
 
+  <!-- CSS base e da página -->
   <link rel="stylesheet" href="/public/css/base/reset.css" />
   <link rel="stylesheet" href="/public/css/base/variables.css" />
   <link rel="stylesheet" href="/public/css/base/typography.css" />
   <link rel="stylesheet" href="/public/css/utilities/helpers.css" />
 
+  <!-- CSS da tela de login -->
   <link rel="stylesheet" href="/public/css/login_css/cabecalho_login.css" />
   <link rel="stylesheet" href="/public/css/login_css/layout_login.css" />
   <link rel="stylesheet" href="/public/css/login_css/form_login.css" />
   <link rel="stylesheet" href="/public/css/login_css/feedback_login.css" />
 </head>
-<body class="dark login-bg">
-  <main class="center">
+
+  <body class="dark login-bg">
+  <main class="login-page">
+    <!-- Logo -->
+    <img src="/public/images/logo_connected_health.png"
+         alt="Logo Connect Health"
+         class="login-logo">
+
+    <!-- Card -->
     <div class="login-card glass">
       <header class="login-head">
-        <span class="brand-mini">Admin</span>
+        <span class="role-badge">Admin</span>
         <h1>HOME CARE</h1>
         <h2>Login</h2>
       </header>
 
-      <% if (error) { %><p class="msg-error"><%= error %></p><% } %>
+      <% if (error) { %>
+        <p class="msg-error"><%= error %></p>
+      <% } %>
 
-      <form method="POST" action="/login" class="form" autocomplete="off">
+      <form method="POST" action="/auth/login" class="form" autocomplete="off">
         <input class="input" name="email" type="email" placeholder="E-mail" required />
         <input class="input" name="password" type="password" placeholder="Senha" required />
         <button class="btn btn-primary" type="submit">LOGIN</button>
@@ -34,4 +45,5 @@
     </div>
   </main>
 </body>
+
 </html>

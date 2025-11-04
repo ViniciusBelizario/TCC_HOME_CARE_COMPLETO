@@ -1,0 +1,14 @@
+<%- include('../layouts/top', { active: 'reports', title: 'Relatórios — Home' }) %>
+<div class="card" style="max-width:960px;margin:0 auto;">
+  <h3>Relatórios</h3>
+  <p class="muted">Selecione o relatório desejado:</p>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:12px;">
+    <a class="btn btn-primary" href="/admin/relatorios/kpis">KPIs gerais</a>
+    <a class="btn btn-primary" href="/admin/relatorios/consultas-dia">Consultas por dia</a>
+    <a class="btn btn-primary" href="/admin/relatorios/utilizacao">Utilização por médico</a>
+    <a class="btn btn--outline" href="/admin/relatorios/retencao">Retenção de pacientes</a>
+    <a class="btn btn--outline" href="/admin/relatorios/detalhado">Consultas — detalhado</a>
+  </div>
+</div>
+<%- include('../layouts/bottom') %>

@@ -1,13 +1,17 @@
-exports.ensureAuth = (req, res, next) => {
-  if (req.session?.user) return next();
-  return res.redirect('/login');
-};
+function requireAuth(req, res, next) {
+  if (!req.session?.user?.token) return res.redirect('/auth/login');
+  next();
+}
 
-exports.ensureRole = (...roles) => {
+function requireRole(...roles) {
   return (req, res, next) => {
-    const u = req.session?.user;
-    if (!u) return res.redirect('/login');
-    if (roles.includes(u.role)) return next();
-    return res.status(403).render('auth/forbidden', { title: 'Acesso negado' });
+    const role = req.session?.user?.role?.toUpperCase();
+    if (!role) return res.redirect('/auth/login');
+    if (!roles.map(r => r.toUpperCase()).includes(role)) {
+      return res.status(403).render('auth/forbidden');
+    }
+    next();
   };
-};
+}
+
+module.exports = { requireAuth, requireRole };

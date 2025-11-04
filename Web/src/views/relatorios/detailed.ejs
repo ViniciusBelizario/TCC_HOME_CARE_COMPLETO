@@ -1,0 +1,50 @@
+<%- include('../layouts/top', { active: 'reports', title: 'Relatórios — Consultas detalhado' }) %>
+<div class="card" style="max-width:1080px;margin:0 auto;">
+  <h3>Consultas — detalhado</h3>
+
+  <form method="GET" action="/admin/relatorios/detalhado" class="form" style="display:grid;gap:10px;margin-bottom:12px;">
+    <div class="form-grid" style="grid-template-columns:1fr 1fr;">
+      <input class="input" type="datetime-local" name="from" value="<%= filters.from || '' %>" required />
+      <input class="input" type="datetime-local" name="to"   value="<%= filters.to   || '' %>" required />
+    </div>
+    <div class="form-grid" style="grid-template-columns:1fr 1fr;">
+      <input class="input" type="text" name="doctorId" value="<%= filters.doctorId || '' %>" placeholder="ID do médico (opcional)" />
+      <select class="input" name="format">
+        <option value="json" <%= (filters.format||'json')==='json' ? 'selected' : '' %>>json</option>
+        <option value="csv"  <%= (filters.format||'json')==='csv'  ? 'selected' : '' %>>csv</option>
+      </select>
+    </div>
+    <div class="form-actions" style="justify-content:flex-end;">
+      <a class="btn" href="/admin/relatorios">Voltar</a>
+      <button class="btn btn-primary" type="submit">Gerar</button>
+    </div>
+  </form>
+
+  <% if (error) { %><p class="msg-error"><%= error %></p><% } %>
+
+  <div class="card" style="overflow:auto;">
+    <table class="table">
+      <thead>
+        <tr>
+          <% if ((items||[]).length) { Object.keys(items[0]).forEach(k => { %>
+            <th><%= k %></th>
+          <% }) } else { %>
+            <th style="text-align:center;">Sem dados</th>
+          <% } %>
+        </tr>
+      </thead>
+      <tbody>
+        <% if ((items||[]).length === 0) { %>
+          <tr><td style="text-align:center;color:#9aa4b2;">Nenhum registro</td></tr>
+        <% } else { %>
+          <% items.forEach(r => { %>
+            <tr>
+              <% Object.keys(items[0]).forEach(k => { %><td><%= r[k] %></td><% }) %>
+            </tr>
+          <% }) %>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+<%- include('../layouts/bottom') %>

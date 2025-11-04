@@ -1,0 +1,32 @@
+<%- include('../layouts/top', { active: 'reports', title: 'Relatórios — Retenção de pacientes' }) %>
+<div class="card" style="max-width:1080px;margin:0 auto;">
+  <h3>Retenção de pacientes</h3>
+
+  <form method="GET" action="/admin/relatorios/retencao" class="form" style="display:grid;gap:10px;margin-bottom:12px;">
+    <div class="form-grid" style="grid-template-columns:1fr 1fr;">
+      <input class="input" type="datetime-local" name="from" value="<%= filters.from || '' %>" required />
+      <input class="input" type="datetime-local" name="to"   value="<%= filters.to   || '' %>" required />
+    </div>
+    <div class="form-grid" style="grid-template-columns:1fr 1fr;">
+      <input class="input" type="datetime-local" name="baselineFrom" value="<%= filters.baselineFrom || '' %>" required />
+      <input class="input" type="datetime-local" name="baselineTo"   value="<%= filters.baselineTo   || '' %>" required />
+    </div>
+    <div class="form-actions" style="justify-content:flex-end;">
+      <a class="btn" href="/admin/relatorios">Voltar</a>
+      <button class="btn btn-primary" type="submit">Gerar</button>
+    </div>
+  </form>
+
+  <% if (error) { %><p class="msg-error"><%= error %></p><% } %>
+
+  <% if (data) { %>
+    <div class="grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;">
+      <div class="card"><strong><%= data.newcomers %></strong><div>Novos</div></div>
+      <div class="card"><strong><%= data.returning %></strong><div>Retornantes</div></div>
+      <div class="card"><strong><%= data.churnApprox %></strong><div>Churn (aprox.)</div></div>
+    </div>
+  <% } else if (!error) { %>
+    <p class="muted">Preencha os períodos e gere o relatório.</p>
+  <% } %>
+</div>
+<%- include('../layouts/bottom') %>

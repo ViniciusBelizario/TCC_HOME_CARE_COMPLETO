@@ -10,33 +10,16 @@ const {
 
 const router = Router();
 
-/**
- * Utils
- */
+/** Utils */
 function toDateSafe(v) {
   if (!v) return undefined;
   const d = new Date(String(v));
   return isNaN(d.getTime()) ? undefined : d;
 }
-
 function setCSV(res, filename) {
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
   res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
 }
-
-const GRANULARITY = {
-  day: '%Y-%m-%d',
-  week: '%x-%v', // ISO week (MySQL)
-  month: '%Y-%m'
-};
-
-function periodExpr(dateColumn, tzOffset, granularity) {
-  const fmt = GRANULARITY[granularity] || GRANULARITY.day;
-  const colName = typeof dateColumn === 'string' ? dateColumn : 'startsAt';
-  const tz = typeof tzOffset === 'string' ? tzOffset : '+00:00';
-  return literal(`DATE_FORMAT(CONVERT_TZ(${colName}, '+00:00', '${tz}'), '${fmt}')`);
-}
-
 function ensureModel(model, name) {
   if (!model) {
     const err = new Error(`${name} não está carregado nos models`);
@@ -44,26 +27,16 @@ function ensureModel(model, name) {
     throw err;
   }
 }
-
 function parseCommonQuery(req) {
   const from = toDateSafe(req.query.from);
   const to = toDateSafe(req.query.to);
-  const tz = typeof req.query.tz === 'string' ? req.query.tz : '+00:00';
   const format = String(req.query.format || 'json').toLowerCase();
-  const granularity = (req.query.granularity || 'day').toLowerCase();
   const doctorId = req.query.doctorId ? Number(req.query.doctorId) : undefined;
-  // mantemos serviceId apenas se o seu Appointment tiver essa coluna;
-  // não fazemos include pois não existe model Service.
-  const serviceId = req.query.serviceId ? Number(req.query.serviceId) : undefined;
-  return { from, to, tz, format, granularity, doctorId, serviceId };
+  return { from, to, format, doctorId };
 }
 
 /**
  * 1) KPIs gerais (ADMIN)
- * - totais por status
- * - duração média
- * - taxa de ocupação (AvailabilitySlot)
- * - receitaEstimativa: como não há Service, deixamos como null
  */
 router.get('/kpis', auth(), requireRole('ADMIN'), async (req, res, next) => {
   try {
@@ -84,43 +57,33 @@ router.get('/kpis', auth(), requireRole('ADMIN'), async (req, res, next) => {
     });
 
     const kpi = {
-      total: 0,
-      requested: 0,
-      accepted: 0,
-      denied: 0,
-      canceled: 0,
-      completed: 0,
+      total: 0, requested: 0, accepted: 0, denied: 0, canceled: 0, completed: 0,
       avgDurationMin: null,
-      revenueEstimated: null // sem Service/basePrice
+      revenueEstimated: null, // sem serviços
+      utilizationRate: null
     };
 
-    let sumDuration = 0;
-    let countDuration = 0;
-
+    let sumDuration = 0, countDuration = 0;
     for (const a of appts) {
       kpi.total += 1;
       const st = String(a.status || '').toUpperCase();
-      if (st === 'REQUESTED') kpi.requested += 1;
-      else if (st === 'ACCEPTED') kpi.accepted += 1;
+      if (st === 'REQUESTED' || st === 'PENDING') kpi.requested += 1;
+      else if (st === 'ACCEPTED' || st === 'CONFIRMED') kpi.accepted += 1;
       else if (st === 'DENIED') kpi.denied += 1;
-      else if (st === 'CANCELED') kpi.canceled += 1;
+      else if (st === 'CANCELED' || st === 'CANCELLED') kpi.canceled += 1;
       else if (st === 'COMPLETED') kpi.completed += 1;
 
       const d = Number(a.durationMin);
-      if (Number.isFinite(d) && d > 0) {
-        sumDuration += d;
-        countDuration += 1;
-      }
+      if (Number.isFinite(d) && d > 0) { sumDuration += d; countDuration += 1; }
     }
     kpi.avgDurationMin = countDuration ? Math.round(sumDuration / countDuration) : null;
 
-    // Ocupação com AvailabilitySlot (se existir)
+    // Taxa de ocupação (slots)
     try {
       ensureModel(AvailabilitySlot, 'AvailabilitySlot');
       const whereSlot = {};
       if (from) whereSlot.startsAt = { [Op.gte]: from };
       if (to) whereSlot.endsAt = { ...(whereSlot.endsAt || {}), [Op.lte]: to };
-
       const slots = await AvailabilitySlot.findAll({
         where: whereSlot,
         attributes: [
@@ -129,7 +92,6 @@ router.get('/kpis', auth(), requireRole('ADMIN'), async (req, res, next) => {
         ],
         raw: true
       });
-
       const totalMin = Number(slots[0]?.totalMin || 0);
       const bookedMin = Number(slots[0]?.bookedMin || 0);
       kpi.utilizationRate = totalMin > 0 ? bookedMin / totalMin : null;
@@ -142,63 +104,61 @@ router.get('/kpis', auth(), requireRole('ADMIN'), async (req, res, next) => {
 });
 
 /**
- * 2) Consultas por período (ADMIN): agrupa por dia/semana/mês e por médico
- * (mantemos serviceId se existir na tabela, mas sem join)
+ * 2) Consultas por dia (ADMIN): simples e direto
+ *    Parâmetros: from, to, doctorId?, format=json|csv
+ *    Agrupa por DATE(startsAt) e doctorId.
  */
 router.get('/appointments/aggregate', auth(), requireRole('ADMIN'), async (req, res, next) => {
   try {
     ensureModel(Appointment, 'Appointment');
-    const { from, to, tz, granularity, format, doctorId, serviceId } = parseCommonQuery(req);
+    const { from, to, format, doctorId } = parseCommonQuery(req);
 
-    const period = periodExpr('startsAt', tz, granularity);
     const whereAppt = {};
     if (from) whereAppt.startsAt = { [Op.gte]: from };
     if (to) whereAppt.endsAt = { ...(whereAppt.endsAt || {}), [Op.lte]: to };
     if (doctorId) whereAppt.doctorId = doctorId;
-    if (serviceId) whereAppt.serviceId = serviceId;
+
+    // period = DATE(startsAt)
+    const period = literal('DATE(`startsAt`)');
 
     const rows = await Appointment.findAll({
       where: whereAppt,
       attributes: [
         [period, 'period'],
         'doctorId',
-        ...(serviceId !== undefined ? ['serviceId'] : ['serviceId']), // mantemos serviceId se existir
-        [fn('SUM', literal(`CASE WHEN status='REQUESTED' THEN 1 ELSE 0 END`)), 'requested'],
-        [fn('SUM', literal(`CASE WHEN status='ACCEPTED' THEN 1 ELSE 0 END`)), 'accepted'],
+        [fn('SUM', literal(`CASE WHEN status IN ('REQUESTED','PENDING') THEN 1 ELSE 0 END`)), 'requested'],
+        [fn('SUM', literal(`CASE WHEN status IN ('ACCEPTED','CONFIRMED') THEN 1 ELSE 0 END`)), 'accepted'],
         [fn('SUM', literal(`CASE WHEN status='DENIED' THEN 1 ELSE 0 END`)), 'denied'],
-        [fn('SUM', literal(`CASE WHEN status='CANCELED' THEN 1 ELSE 0 END`)), 'canceled'],
+        [fn('SUM', literal(`CASE WHEN status IN ('CANCELED','CANCELLED') THEN 1 ELSE 0 END`)), 'canceled'],
         [fn('SUM', literal(`CASE WHEN status='COMPLETED' THEN 1 ELSE 0 END`)), 'completed'],
         [fn('COUNT', col('id')), 'total'],
         [fn('AVG', fn('TIMESTAMPDIFF', literal('MINUTE'), col('startsAt'), col('endsAt'))), 'avgDurationMin']
       ],
-      group: ['period', 'doctorId', 'serviceId'],
-      order: [[literal('period'), 'ASC']]
+      group: ['period', 'doctorId'],
+      order: [[literal('period'), 'ASC']],
+      raw: true
     });
 
     // nomes dos médicos (sem join pesado)
-    const docMap = {};
-    if (rows.length) {
-      try {
-        ensureModel(User, 'User');
-        const dIds = [...new Set(rows.map(r => r.get('doctorId')).filter(Boolean))];
-        const docs = dIds.length ? await User.findAll({ where: { id: dIds }, attributes: ['id', 'name'] }) : [];
-        for (const d of docs) docMap[d.id] = d.name;
-      } catch {}
+    const docIds = [...new Set(rows.map(r => r.doctorId).filter(Boolean))];
+    const nameMap = {};
+    if (docIds.length) {
+      const docs = await User.findAll({ where: { id: docIds }, attributes: ['id', 'name'], raw: true });
+      for (const d of docs) nameMap[d.id] = d.name;
     }
 
     const data = rows.map(r => ({
-      period: r.get('period'),
-      doctorId: r.get('doctorId'),
-      doctor: docMap[r.get('doctorId')] || null,
-      serviceId: r.get('serviceId') ?? null, // só ID; sem nome/price
-      requested: Number(r.get('requested') || 0),
-      accepted: Number(r.get('accepted') || 0),
-      denied: Number(r.get('denied') || 0),
-      canceled: Number(r.get('canceled') || 0),
-      completed: Number(r.get('completed') || 0),
-      total: Number(r.get('total') || 0),
-      avgDurationMin: r.get('avgDurationMin') != null ? Math.round(Number(r.get('avgDurationMin'))) : null,
-      completionRate: Number(r.get('total') || 0) ? Number(r.get('completed') || 0) / Number(r.get('total')) : null
+      period: r.period, // yyyy-mm-dd
+      doctorId: Number(r.doctorId),
+      doctor: nameMap[r.doctorId] || null,
+      requested: Number(r.requested || 0),
+      accepted: Number(r.accepted || 0),
+      denied: Number(r.denied || 0),
+      canceled: Number(r.canceled || 0),
+      completed: Number(r.completed || 0),
+      total: Number(r.total || 0),
+      avgDurationMin: r.avgDurationMin != null ? Math.round(Number(r.avgDurationMin)) : null,
+      completionRate: Number(r.total || 0) ? Number(r.completed || 0) / Number(r.total) : null
     }));
 
     if (format === 'csv') {
@@ -211,7 +171,7 @@ router.get('/appointments/aggregate', auth(), requireRole('ADMIN'), async (req, 
 });
 
 /**
- * 3) Produtividade e utilização por médico (ADMIN)
+ * 3) Produtividade por médico (ADMIN)
  */
 router.get('/doctors/utilization', auth(), requireRole('ADMIN'), async (req, res, next) => {
   try {
@@ -272,15 +232,15 @@ router.get('/doctors/utilization', auth(), requireRole('ADMIN'), async (req, res
       map.set(s.doctorId, row);
     }
 
-    // nome do médico
     const result = Array.from(map.values());
-    try {
-      ensureModel(User, 'User');
-      const ids = result.map(r => r.doctorId).filter(Boolean);
-      const docs = await User.findAll({ where: { id: ids }, attributes: ['id', 'name'] });
+    const ids = result.map(r => r.doctorId).filter(Boolean);
+    if (ids.length) {
+      const docs = await User.findAll({ where: { id: ids }, attributes: ['id', 'name'], raw: true });
       const nameMap = new Map(docs.map(d => [d.id, d.name]));
       result.forEach(r => (r.doctor = nameMap.get(r.doctorId) || null));
-    } catch {}
+    } else {
+      result.forEach(r => (r.doctor = null));
+    }
 
     result.forEach(r => {
       r.utilizationRate = r.minutesAvailable > 0 ? r.minutesBookedBySlots / r.minutesAvailable : null;
@@ -309,7 +269,6 @@ router.get('/patients/retention', auth(), requireRole('ADMIN'), async (req, res,
       return res.status(400).json({ error: 'from/to inválidos' });
     }
 
-    // Pacientes com consulta no período
     const appts = await Appointment.findAll({
       where: { startsAt: { [Op.gte]: from }, endsAt: { [Op.lte]: to } },
       attributes: ['patientId'],
@@ -318,7 +277,6 @@ router.get('/patients/retention', auth(), requireRole('ADMIN'), async (req, res,
     });
     const patientIds = appts.map(a => a.patientId);
 
-    // Primeira consulta histórica por paciente
     let newcomers = 0, returning = 0;
     if (patientIds.length) {
       const firsts = await Appointment.findAll({
@@ -327,9 +285,7 @@ router.get('/patients/retention', auth(), requireRole('ADMIN'), async (req, res,
         group: ['patientId'],
         raw: true
       });
-
       const firstMap = new Map(firsts.map(f => [f.patientId, new Date(f.firstStart)]));
-
       for (const pid of patientIds) {
         const first = firstMap.get(pid);
         if (first && first >= from && first <= to) newcomers++;
@@ -339,7 +295,6 @@ router.get('/patients/retention', auth(), requireRole('ADMIN'), async (req, res,
 
     const result = { newcomers, returning };
 
-    // churn opcional
     const baselineFrom = toDateSafe(req.query.baselineFrom);
     const baselineTo = toDateSafe(req.query.baselineTo);
     if (baselineFrom && baselineTo && baselineTo > baselineFrom) {
@@ -361,7 +316,7 @@ router.get('/patients/retention', auth(), requireRole('ADMIN'), async (req, res,
 });
 
 /**
- * 5) Exames (ADMIN): usa ExamResult + associação uploadedBy
+ * 5) Exames (ADMIN): ExamResult + uploadedBy
  */
 router.get('/exams/summary', auth(), requireRole('ADMIN'), async (req, res, next) => {
   try {
@@ -372,7 +327,6 @@ router.get('/exams/summary', auth(), requireRole('ADMIN'), async (req, res, next
     if (from) whereExam.createdAt = { [Op.gte]: from };
     if (to) whereExam.createdAt = { ...(whereExam.createdAt || {}), [Op.lte]: to };
 
-    // Por MIME
     const byMime = await ExamResult.findAll({
       where: whereExam,
       attributes: ['mimeType', [fn('COUNT', col('id')), 'count'], [fn('SUM', col('size')), 'totalBytes']],
@@ -380,7 +334,6 @@ router.get('/exams/summary', auth(), requireRole('ADMIN'), async (req, res, next
       raw: true
     });
 
-    // Por papel do uploader
     const uploads = await ExamResult.findAll({
       where: whereExam,
       include: [{ association: ExamResult.associations.uploadedBy, attributes: ['role'] }],
@@ -415,19 +368,17 @@ router.get('/exams/summary', auth(), requireRole('ADMIN'), async (req, res, next
 });
 
 /**
- * 6) Detalhado (MÉDICO/ATENDENTE) e agregado (ADMIN)
- * - sem Service; mantemos apenas serviceId se existir na tabela
+ * 6) Detalhado/Aggregado simples (sem service)
  */
 router.get('/appointments/detailed', auth(), requireRole('MEDICO', 'ATENDENTE', 'ADMIN'), async (req, res, next) => {
   try {
     ensureModel(Appointment, 'Appointment');
-    const { from, to, format, doctorId, serviceId } = parseCommonQuery(req);
+    const { from, to, format, doctorId } = parseCommonQuery(req);
 
     const whereAppt = {};
     if (from) whereAppt.startsAt = { [Op.gte]: from };
     if (to) whereAppt.endsAt = { ...(whereAppt.endsAt || {}), [Op.lte]: to };
     if (doctorId) whereAppt.doctorId = doctorId;
-    if (serviceId) whereAppt.serviceId = serviceId;
 
     const rows = await Appointment.findAll({
       where: whereAppt,
@@ -441,18 +392,21 @@ router.get('/appointments/detailed', auth(), requireRole('MEDICO', 'ATENDENTE', 
     if (req.user.role === 'ADMIN') {
       const agg = {};
       for (const d of rows) {
-        const key = `${d.doctorId}|${d.doctor?.name || ''}|${d.serviceId || ''}`;
+        const key = `${d.doctorId}|${d.doctor?.name || ''}`;
         if (!agg[key]) {
           agg[key] = {
             doctorId: d.doctorId,
             doctor: d.doctor?.name || '',
-            serviceId: d.serviceId || null,
             requested: 0, accepted: 0, denied: 0, canceled: 0, completed: 0,
             total: 0
           };
         }
         const st = String(d.status || '').toUpperCase();
-        const k = st.toLowerCase();
+        const k = (st === 'PENDING' ? 'requested'
+                 : st === 'CONFIRMED' ? 'accepted'
+                 : st === 'CANCELLED' ? 'canceled'
+                 : st === 'CANCELED' ? 'canceled'
+                 : st.toLowerCase());
         agg[key][k] = (agg[key][k] || 0) + 1;
         agg[key].total += 1;
       }
@@ -466,14 +420,13 @@ router.get('/appointments/detailed', auth(), requireRole('MEDICO', 'ATENDENTE', 
       return res.json(summary);
     }
 
-    // Médico/Atendente: detalhado com paciente (sem Service)
+    // Médico/Atendente: detalhado
     const data = rows.map(d => ({
       id: d.id,
       doctorId: d.doctor?.id,
       doctor: d.doctor?.name || '',
       patientId: d.patient?.id,
       patient: d.patient?.name || '',
-      serviceId: d.serviceId || null, // só ID, se existir
       startsAt: d.startsAt?.toISOString?.() || null,
       endsAt: d.endsAt?.toISOString?.() || null,
       status: d.status,

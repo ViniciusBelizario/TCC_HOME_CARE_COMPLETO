@@ -1,15 +1,22 @@
-<%- include('../layouts/top', { active, title: 'HOME CARE — Agendamentos' }) %>
+<%- include('../layouts/top', { 
+  active: 'appointments', 
+  title: 'Connect Health — Agendamentos',
+  pageCss: ['/public/css/admin_css/pages/agendamentos.css']
+}) %>
 
-<div class="card">
-  <h3 style="margin-bottom:10px;">Agendamentos</h3>
-  <ul class="list">
-    <% if (!pendings || pendings.length === 0) { %>
-      <li>Nenhum agendamento encontrado.</li>
-    <% } %>
-    <% (pendings || []).forEach(p => { %>
-      <li><strong><%= p.user %></strong> — <%= p.service %> — <%= p.date %> <%= p.time %></li>
-    <% }) %>
-  </ul>
+<div class="card" style="max-width:960px;margin:0 auto;">
+  <h3>Agendamentos</h3>
+  <p class="muted">Selecione uma ação:</p>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-top:12px;">
+    <a class="btn btn-primary" href="/admin/agendamentos/novo">Criar horário específico</a>
+    <a class="btn btn-primary" href="/admin/agendamentos/lote">Criar agenda do dia (lote)</a>
+    <a class="btn btn--outline" href="/admin/agendamentos/listar">Listar e gerenciar horários</a>
+    <a class="btn btn--outline" href="/admin/agendamentos/confirmar">Confirmar consulta (por ID)</a>
+    <a class="btn btn--outline" href="/admin/agendamentos/cancelar">Cancelar consulta (por ID)</a>
+    <!-- Linkando a tela que fizemos no módulo de Usuários -->
+    <a class="btn" href="/admin/usuarios/agenda">Agenda do médico</a>
+  </div>
 </div>
 
 <%- include('../layouts/bottom') %>

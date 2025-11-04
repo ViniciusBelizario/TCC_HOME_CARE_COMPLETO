@@ -1,3 +1,4 @@
+//src\routes\patients.routes.js
 const { Router } = require('express');
 const { models: { User, PatientProfile, ExamResult } } = require('../db');
 const { auth } = require('../middlewares/auth');

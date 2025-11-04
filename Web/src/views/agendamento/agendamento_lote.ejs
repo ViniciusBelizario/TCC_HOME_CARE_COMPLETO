@@ -1,0 +1,33 @@
+<%- include('../layouts/top', { active, title: 'Agendamentos — Lote (Dia)' }) %>
+
+<div class="new-user-wrapper">
+  <div class="card new-user-card">
+    <h3>Criar agenda do dia (lote)</h3>
+
+    <% if (ok) { %><p class="msg-ok"><%= ok %></p><% } %>
+    <% if (error) { %><p class="msg-error"><%= error %></p><% } %>
+
+    <form method="POST" action="/admin/agendamentos/lote" class="form new-user-form" autocomplete="off">
+      <div class="form-grid">
+        <select class="input" name="doctorId" required>
+          <option value="">Selecione o médico</option>
+          <% (doctors||[]).forEach(d => { %>
+            <option value="<%= d.id %>"><%= d.name %> — <%= d.specialty %> (<%= d.crm %>)</option>
+          <% }) %>
+        </select>
+
+        <input class="input" type="date" name="date" required />
+        <input class="input" type="time" name="startTime" required />
+        <input class="input" type="time" name="endTime" required />
+        <input class="input" type="number" name="durationMin" min="5" step="5" placeholder="Duração (min)" required />
+      </div>
+
+      <div class="form-actions">
+        <a class="btn" href="/admin/agendamentos">Voltar</a>
+        <button class="btn btn-primary" type="submit">Criar agenda</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<%- include('../layouts/bottom') %>

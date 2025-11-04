@@ -1,42 +1,171 @@
-<%- include('../layouts/top', { active, title: 'HOME CARE — Usuários' }) %>
+<!--src\views\admin\usuarios.ejs-->
+<%- include('../layouts/top', { 
+  active, 
+  title: 'Connect Health — Usuários',
+  pageCss: ['/public/css/admin_css/pages/usuarios.css'] 
+}) %>
 
-<div class="toolbar" style="display:flex;align-items:center;gap:10px;">
-  <form method="GET" action="/admin/usuarios" style="display:flex;gap:8px;">
-    <input class="input" name="q" value="<%= q || '' %>" placeholder="Buscar usuários" />
-    <button class="btn" type="submit">Buscar</button>
-  </form>
+<div class="toolbar">
+  <div class="search-section">
+    <input type="text" id="searchInput" class="input" placeholder="Buscar por nome, CPF ou e-mail">
+    <button class="btn" id="searchBtn">Buscar</button>
+  </div>
 
-  <% if (isAdmin || isAtendente) { %>
-    <a href="/admin/usuarios/novo" class="btn btn-primary">+ Novo Usuário</a>
-  <% } %>
+  <a href="/admin/usuarios/novo" class="btn btn-primary" id="btnNovoUsuario">+ Novo Usuário</a>
 </div>
 
-<div class="card">
+<!-- LISTAGEM DE USUÁRIOS -->
+<div id="resultContainer" class="card">
   <table class="table" id="userTable">
     <thead>
       <tr>
-        <th data-key="name">Nome</th>
-        <th data-key="cpf">CPF</th>
-        <th data-key="email">E-mail</th>
-        <th data-key="role">Papel</th>
+        <th>Nome</th>
+        <th>CPF</th>
+        <th>E-mail</th>
+        <th>Papel</th>
         <th>Ações</th>
       </tr>
     </thead>
-    <tbody>
-      <% if (!users || users.length === 0) { %>
-        <tr><td colspan="5">Nenhum usuário encontrado.</td></tr>
-      <% } %>
-      <% (users || []).forEach(u => { %>
-        <tr>
-          <td><%= u.name %></td>
-          <td><%= u.cpf || '—' %></td>
-          <td><%= u.email %></td>
-          <td><%= u.role %></td>
-          <td><a href="/admin/exames" onclick="localStorage.setItem('focusCPF','<%= u.cpf || '' %>')" >Exames</a></td>
-        </tr>
-      <% }) %>
-    </tbody>
+    <tbody id="userTableBody">
+  <% if (users && users.length > 0) { %>
+    <% users.forEach(u => { %>
+      <tr>
+        <td><%= u.name %></td>
+        <td><%= u.cpf %></td>
+        <td><%= u.email %></td>
+        <td><%= u.role %></td>
+        <td>
+          <button class="btn btn-outline btn-small" data-id="<%= u.id %>">Prontuário</button>
+        </td>
+      </tr>
+    <% }) %>
+  <% } else { %>
+    <tr>
+      <td colspan="5" style="text-align:center; color:#aaa;">Nenhum usuário encontrado.</td>
+    </tr>
+  <% } %>
+</tbody>
   </table>
 </div>
 
+<!-- MODAL: NOVO USUÁRIO (começa escondido de verdade) -->
+<div id="modalUsuario" class="modal hidden" style="display:none !important;">
+  <div class="modal-content">
+    <h2>Cadastrar Novo Usuário</h2>
+    <form id="formNovoUsuario">
+      <div class="form-grid">
+        <input type="text" name="nome" placeholder="Nome completo" required>
+        <input type="text" name="telefone" placeholder="Telefone">
+        <input type="text" name="cpf" id="cpfInput" placeholder="CPF" required maxlength="14">
+        <input type="text" name="cep" id="cepInput" placeholder="CEP" maxlength="8">
+        <input type="text" name="endereco" id="enderecoInput" placeholder="Endereço">
+        <select name="sexo" required>
+          <option value="">Selecione o sexo</option>
+          <option>Masculino</option>
+          <option>Feminino</option>
+        </select>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Salvar</button>
+        <button type="button" class="btn btn-outline" id="fecharModalUsuario">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: PRONTUÁRIO (começa escondido também) -->
+<div id="modalProntuario" class="modal hidden" style="display:none !important;">
+  <div class="modal-content">
+    <h2>Prontuário do Paciente</h2>
+    <div class="prontuario-info">
+      <p><strong>Nome:</strong> Maria Pereira</p>
+      <p><strong>Idade:</strong> 36 anos</p>
+      <p><strong>Último Atendimento:</strong> 27/04/2024 — Avaliação com Dr. Juliana Costa</p>
+      <h4>Exames Recentes</h4>
+      <ul>
+        <li>Exame de sangue — 12/04/2024</li>
+        <li>Ressonância — 10/02/2024</li>
+      </ul>
+    </div>
+
+    <div class="form-actions" style="margin-top:15px; justify-content:space-between;">
+      <div>
+        <button class="btn btn-primary">📄 Baixar PDF</button>
+        <button class="btn btn-outline">🖨️ Imprimir</button>
+      </div>
+      <button class="btn btn-outline" id="fecharModalProntuario">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <%- include('../layouts/bottom') %>
+
+<!-- ============================= -->
+<!--  SCRIPT DIRETO NO ARQUIVO     -->
+<!-- ============================= -->
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const modalUsuario = document.getElementById('modalUsuario');
+  const modalProntuario = document.getElementById('modalProntuario');
+  const btnNovoUsuario = document.getElementById('btnNovoUsuario');
+  const btnVerProntuario = document.getElementById('btnVerProntuario');
+  const fecharModalUsuario = document.getElementById('fecharModalUsuario');
+  const fecharModalProntuario = document.getElementById('fecharModalProntuario');
+  const formNovoUsuario = document.getElementById('formNovoUsuario');
+  const cpfInput = document.getElementById('cpfInput');
+  const cepInput = document.getElementById('cepInput');
+  const enderecoInput = document.getElementById('enderecoInput');
+
+  // Função genérica pra abrir e fechar modais com fade
+  const abrirModal = (modal) => {
+    modal.style.display = 'flex';
+    modal.classList.remove('hidden');
+  };
+  const fecharModal = (modal) => {
+    modal.classList.add('hidden');
+    setTimeout(() => { modal.style.display = 'none'; }, 150);
+  };
+
+  // Eventos
+  btnNovoUsuario.addEventListener('click', () => abrirModal(modalUsuario));
+  fecharModalUsuario.addEventListener('click', () => fecharModal(modalUsuario));
+  btnVerProntuario.addEventListener('click', () => abrirModal(modalProntuario));
+  fecharModalProntuario.addEventListener('click', () => fecharModal(modalProntuario));
+
+  // Máscara CPF
+  cpfInput.addEventListener('input', () => {
+    cpfInput.value = cpfInput.value
+      .replace(/\D/g, '')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+  });
+
+  // Fake auto preenchimento por CEP
+  cepInput.addEventListener('input', () => {
+    if (cepInput.value.length === 8) {
+      enderecoInput.value = 'Rua Exemplo, Bairro Central - Cidade Modelo';
+    }
+  });
+
+  // Fake salvar usuário
+  formNovoUsuario.addEventListener('submit', e => {
+    e.preventDefault();
+    alert('Usuário cadastrado com sucesso (simulação)');
+    fecharModal(modalUsuario);
+  });
+});
+
+
+document.addEventListener('DOMContentLoaded', () => {
+  const searchInput = document.getElementById('searchInput');
+  const searchBtn = document.getElementById('searchBtn');
+
+  searchBtn.addEventListener('click', () => {
+    const q = searchInput.value.trim();
+    const url = q ? `/admin/usuarios?q=${encodeURIComponent(q)}` : '/admin/usuarios';
+    window.location.href = url;
+  });
+});
+</script>

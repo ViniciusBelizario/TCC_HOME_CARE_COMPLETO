@@ -1,4 +1,24 @@
-*{box-sizing:border-box}html,body{margin:0;padding:0}
-img{max-width:100%;display:block}
-a{text-decoration:none;color:inherit}
-table{border-collapse:collapse}
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;              /* Adicionado para melhor controle de altura da tela */
+  font-family: sans-serif;   /* Pode ser removido se estiver usando outra tipografia */
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+table {
+  border-collapse: collapse;
+}

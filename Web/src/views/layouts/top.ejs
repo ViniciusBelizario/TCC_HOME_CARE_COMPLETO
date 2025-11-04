@@ -1,3 +1,4 @@
+<!-- src/views/layouts/top.ejs -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -22,40 +23,73 @@
   <link rel="stylesheet" href="/public/css/admin_css/components/search.css" />
   <link rel="stylesheet" href="/public/css/admin_css/components/lists.css" />
 
-  <% if (typeof pageCss !== 'undefined') { pageCss.forEach(href => { %>
+  <% if (typeof pageCss !== 'undefined' && Array.isArray(pageCss)) { pageCss.forEach(href => { %>
     <link rel="stylesheet" href="<%= href %>" />
   <% }) } %>
 </head>
 <body class="dark">
+<%
+  // ---- Fallbacks seguros para evitar ReferenceError nas includes ----
+  const __user = typeof user !== 'undefined' && user ? user : (typeof locals !== 'undefined' && locals.user ? locals.user : null);
+  const __role = (__user && __user.role && String(__user.role).toUpperCase()) || null;
+
+  const __isAdmin = (typeof isAdmin !== 'undefined') ? !!isAdmin : (__role === 'ADMIN');
+  const __isAtendente = (typeof isAtendente !== 'undefined') ? !!isAtendente : (__role === 'ATENDENTE');
+  const __isMedico = (typeof isMedico !== 'undefined') ? !!isMedico : (__role === 'MEDICO');
+  const __active = (typeof active !== 'undefined') ? active : '';
+%>
+
 <div class="app">
   <aside class="sidebar">
-    <div class="sidebar__brand"><span class="brand-mini">Admin</span></div>
+    <div class="sidebar__brand">
+      <span class="brand-mini">Admin</span>
+    </div>
+
     <nav class="menu">
-      <a href="/admin/dashboard" class="menu__item <%= active==='dashboard' ? 'active' : '' %>"><span class="ico">▣</span> Dashboards</a>
+      <a href="/admin/dashboard" class="menu__item <%= __active==='dashboard' ? 'active' : '' %>">
+        <span class="ico">▣</span> Dashboards
+      </a>
 
-      <% if (isAdmin || isAtendente) { %>
-        <a href="/admin/usuarios" class="menu__item <%= active==='users' ? 'active' : '' %>"><span class="ico">👤</span> Usuários</a>
+      <% if (__isAtendente) { %>
+        <a href="/admin/usuarios" class="menu__item <%= __active==='users' ? 'active' : '' %>">
+          <span class="ico">👤</span> Usuários
+        </a>
       <% } %>
 
-      <% if (isAdmin || isAtendente || isMedico) { %>
-        <a href="/admin/agendamentos" class="menu__item <%= active==='appointments' ? 'active' : '' %>"><span class="ico">▦</span> Agendamentos</a>
-        <a href="/admin/exames" class="menu__item <%= active==='exams' ? 'active' : '' %>"><span class="ico">🧪</span> Exames / Prontuário</a>
+      <% if (__isAtendente || __isMedico) { %>
+        <a href="/admin/agendamentos" class="menu__item <%= __active==='appointments' ? 'active' : '' %>">
+          <span class="ico">▦</span> Agendamentos
+        </a>
+        <a href="/admin/exames" class="menu__item <%= __active==='exams' ? 'active' : '' %>">
+          <span class="ico"></span> 
+        </a>
       <% } %>
 
-      <% if (isAdmin || isMedico) { %>
-        <a href="/admin/relatorios" class="menu__item <%= active==='reports' ? 'active' : '' %>"><span class="ico">▸</span> Relatórios</a>
-      <% } %>
+      <% if (__isAdmin) { %>
+  <a href="/admin/relatorios" class="menu__item <%= __active==='reports' ? 'active' : '' %>">
+    <span class="ico">▸</span> Relatórios
+  </a>
+<% } %>
     </nav>
   </aside>
 
   <main class="main">
     <header class="topbar">
-      <h1 class="title">HOME CARE</h1>
-      <div style="display:flex;gap:10px;align-items:center;">
-        <% if (user) { %>
-          <span class="muted"><strong><%= user.name %></strong> — <%= user.role %></span>
+      <div class="topbar__left">
+        <img src="/public/images/logo_connected_health.png" alt="Connect Health" class="topbar__logo" />
+      </div>
+
+      <div class="topbar__right">
+        <% if (__user) { %>
+          <span class="muted"><strong><%= __user.name || 'Usuário' %></strong> — <%= __role || '—' %></span>
         <% } %>
-        <form method="POST" action="/logout"><button class="btn btn--outline">Sair</button></form>
+
+        <form method="POST" action="/auth/logout" style="margin-left:12px;">
+          <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <% } %>
+          <button class="btn btn--outline">Sair</button>
+        </form>
       </div>
     </header>
 

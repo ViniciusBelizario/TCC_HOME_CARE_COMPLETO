@@ -1,2 +1,4 @@
 /* já cobrimos .msg-error em utilities; se quiser algo específico do login: */
-.login-card .msg-error{margin-bottom:8px}
+.login-card .msg-error {
+  margin-bottom: 8px;
+}

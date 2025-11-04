@@ -1,45 +1,120 @@
-<%- include('../layouts/top', { active, title: 'HOME CARE — Dashboard' }) %>
+<!-- src/views/admin/dashboard.ejs -->
+<%- include('../layouts/top', {
+  active,
+  title: 'Connect Health — Dashboard',
+  pageCss: ['/public/css/admin_css/pages/dashboard.css']
+}) %>
 
-<div class="grid grid-4">
-  <div class="card stat"><strong><%= stats.totalUsers %></strong><span>Usuários</span></div>
-  <div class="card stat"><strong><%= stats.scheduled %></strong><span>Agendamentos Marcados</span></div>
-  <div class="card stat"><strong><%= stats.finished %></strong><span>Agendamentos Concluídos</span></div>
-  <div class="card"><div class="chart-placeholder">Agendamentos ao longo do tempo</div></div>
-</div>
+<section class="dashboard">
 
-<div class="grid grid-3">
-  <div class="card">
-    <h3>Agendamentos Pendentes</h3>
-    <table class="table">
-      <thead><tr><th>Usuário</th><th>Serviço</th><th>Data</th><th>Hora</th></tr></thead>
-      <tbody>
+  <!-- KPIs principais -->
+  <div class="dashboard__stats">
+    <div class="card stat-card">
+      <strong><%= (stats && stats.totalUsers) || 0 %></strong>
+      <span>Usuários Cadastrados</span>
+    </div>
+    <div class="card stat-card">
+      <strong><%= (stats && stats.scheduled) || 0 %></strong>
+      <span>Agendamentos Marcados</span>
+    </div>
+    <div class="card stat-card">
+      <strong><%= (stats && stats.finished) || 0 %></strong>
+      <span>Agendamentos Concluídos</span>
+    </div>
+    <div class="card stat-card">
+      <canvas id="chartAtendimentos"></canvas>
+    </div>
+  </div>
+
+  <!-- Área inferior -->
+  <div class="dashboard__content">
+    <!-- Agendamentos Pendentes -->
+    <div class="card content-card">
+      <h3>Agendamentos Pendentes</h3>
+
+      <div class="appointments-list">
         <% (pendings || []).forEach(p => { %>
-          <tr><td><%= p.user %></td><td><%= p.service %></td><td><%= p.date %></td><td><%= p.time %></td></tr>
+          <div class="appointment-item">
+            <div class="info">
+              <strong><%= p.user %></strong>
+              <span><%= p.service %></span>
+              <small><%= p.date %> — <%= p.time %></small>
+            </div>
+            <div class="actions">
+              <button class="btn-accept">Aceitar</button>
+              <button class="btn-reject">Recusar</button>
+            </div>
+          </div>
         <% }) %>
-      </tbody>
-    </table>
-  </div>
 
-  <div class="card">
-    <h3>Usuários Recentes</h3>
-    <table class="table">
-      <thead><tr><th>Nome</th><th>Papel</th></tr></thead>
-      <tbody>
-        <% (recentUsers || []).forEach(u => { %>
-          <tr><td><%= u.name %></td><td><%= u.role %></td></tr>
-        <% }) %>
-      </tbody>
-    </table>
-  </div>
+        <% if (!(pendings || []).length) { %>
+          <p class="muted" style="margin-top:8px;">Sem agendamentos pendentes.</p>
+        <% } %>
+      </div>
+    </div>
 
-  <div class="card">
-    <h3>Agendamentos Recentes</h3>
-    <ul class="list">
-      <% (recentAppts || []).forEach(a => { %>
-        <li><strong><%= a.user %></strong> — <%= a.serv %> — <%= a.quando %></li>
-      <% }) %>
-    </ul>
+    <!-- Status de atendimentos -->
+    <div class="card content-card">
+      <h3>Status dos Atendimentos</h3>
+      <ul class="attendances-list">
+        <li>
+          <strong>Maria Pereira</strong> — <span class="status success">Atendida</span> <br>
+          <small>Responsável: Dr. Juliana Costa</small>
+        </li>
+        <li>
+          <strong>Lucas Moraes</strong> — <span class="status danger">Cancelou</span> <br>
+          <small>Cancelado por: Secretaria</small>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Disponibilização de horários -->
+    <div class="card content-card">
+      <h3>Disponibilizar Horários de Atendimento</h3>
+      <form class="schedule-form">
+        <div class="form-row">
+          <input type="date" name="data" required />
+          <input type="time" name="horaInicio" required />
+          <input type="time" name="horaFim" required />
+          <button type="submit" class="btn btn-primary">Adicionar</button>
+        </div>
+      </form>
+
+      <ul class="schedule-list">
+        <li>🕓 10:00 - 11:00 — Disponível</li>
+        <li>🕐 14:00 - 15:00 — Disponível</li>
+      </ul>
+    </div>
+
   </div>
-</div>
+</section>
 
 <%- include('../layouts/bottom') %>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  (function () {
+    const el = document.getElementById('chartAtendimentos');
+    if (!el) return;
+    const ctx = el.getContext('2d');
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['Seg', 'Ter', 'Qua', 'Qui', 'Sex'],
+        datasets: [{
+          label: 'Atendimentos da Semana',
+          data: [4, 6, 3, 7, 5],
+          borderRadius: 8,
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: '#cbd5e1' }, grid: { display: false } },
+          y: { ticks: { color: '#64748b' }, grid: { color: '#1e293b' } }
+        }
+      }
+    });
+  })();
+</script>

@@ -1,31 +1,56 @@
-<%- include('../layouts/top', { active, title: 'HOME CARE — Novo Usuário' }) %>
+<%- include('../layouts/top', { 
+  active, 
+  title: 'HOME CARE — Novo Paciente',
+  pageCss: ['/public/css/admin_css/pages/usuario_novo.css']  // ✅ CSS dedicado
+}) %>
 
-<div class="card">
-  <h3>Cadastrar Usuário</h3>
+<div class="new-user-wrapper">
+  <div class="card new-user-card">
+    <h3 class="new-user-title">Cadastrar Paciente</h3>
 
-  <% if (error) { %>
-    <p class="msg-error"><%= error %></p>
-  <% } %>
+    <% if (error) { %>
+      <p class="msg-error"><%= error %></p>
+    <% } %>
 
-  <form method="POST" action="/admin/usuarios" class="form" autocomplete="off" style="display:grid;gap:10px;max-width:520px;">
-    <input class="input" name="name" placeholder="Nome" required />
-    <input class="input" name="email" type="email" placeholder="E-mail" required />
-    <input class="input" name="cpf" maxlength="14" placeholder="CPF (000.000.000-00)" />
-    <input class="input" name="password" type="password" placeholder="Senha temporária" required />
+    <form method="POST" action="/admin/usuarios" class="form new-user-form" autocomplete="off">
+      <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <% } %>
 
-    <label>Papel</label>
-    <select class="input" name="role" required>
-      <option value="USUARIO">USUÁRIO</option>
-      <option value="ATENDENTE">ATENDENTE</option>
-      <option value="MEDICO">MÉDICO</option>
-      <option value="ADMIN">ADMIN</option>
-    </select>
+      <div class="form-grid">
+        <input class="input" name="name" placeholder="Nome completo" required />
+        <input class="input" name="email" type="email" placeholder="E-mail" required />
+        <input class="input" name="cpf" maxlength="14" placeholder="CPF (000.000.000-00)" />
+        <input class="input" name="password" type="password" placeholder="Senha temporária" required />
+        <input class="input" name="phone" placeholder="Telefone (apenas números)" />
+        <input class="input" name="birthDate" type="date" placeholder="Data de nascimento (YYYY-MM-DD)" />
+        <input class="input full" name="address" placeholder="Endereço (Rua, nº - Bairro/Cidade)" />
+      </div>
 
-    <div style="display:flex;gap:10px;">
-      <button class="btn btn-primary" type="submit">Salvar</button>
-      <a class="btn" href="/admin/usuarios">Cancelar</a>
-    </div>
-  </form>
+      
+
+      <div class="form-actions">
+        <a class="btn" href="/admin/usuarios">Cancelar</a>
+        <button class="btn btn-primary" type="submit">Salvar</button>
+      </div>
+    </form>
+  </div>
 </div>
 
 <%- include('../layouts/bottom') %>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const cpfInput = document.querySelector('input[name="cpf"]');
+  if (cpfInput) {
+    cpfInput.addEventListener('input', () => {
+      cpfInput.value = cpfInput.value
+        .replace(/\D/g, '')
+        .slice(0, 11)
+        .replace(/(\d{3})(\d)/, '$1.$2')
+        .replace(/(\d{3})(\d)/, '$1.$2')
+        .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+    });
+  }
+});
+</script>

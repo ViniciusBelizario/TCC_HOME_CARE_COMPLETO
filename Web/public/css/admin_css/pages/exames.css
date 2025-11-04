@@ -1,12 +1,114 @@
-.exams{display:grid;grid-template-columns:320px 1fr;gap:16px}
-.exams__aside{display:flex;flex-direction:column;gap:16px}
-.box-info{background:var(--panel-2);border:1px solid var(--border);border-radius:10px;padding:10px}
+.exams-container {
+  display: flex;
+  gap: 24px;
+  padding: 24px;
+}
 
-.row{display:flex;gap:8px;align-items:center}
-.mt{margin-top:12px}
-.hidden{display:none}
-.muted{color:#c7d2fe}
+.exams-sidebar {
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
 
-.uploader{display:flex;gap:8px;align-items:center}
-#fileList li a{color:#bfdbfe}
-#evalList .card{background:var(--panel-2);border:1px solid var(--border);border-radius:10px;padding:10px}
+.exams-content {
+  flex: 1;
+}
+
+.card {
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 12px;
+  padding: 20px;
+  color: #e2e8f0;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.input, textarea {
+  background: #1e293b;
+  border: 1px solid #1e293b;
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: #e2e8f0;
+  width: 100%;
+}
+
+.btn {
+  background: #1e40af;
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.btn:hover {
+  background: #2563eb;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.divider {
+  border: 0;
+  height: 1px;
+  background: #1e293b;
+  margin: 15px 0;
+}
+
+/* Tabela */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+.table th, .table td {
+  padding: 10px;
+  border-bottom: 1px solid #1e293b;
+  text-align: left;
+}
+.table th {
+  color: #60a5fa;
+}
+.table td.alto {
+  color: #ef4444;
+  font-weight: bold;
+}
+.table td.baixo {
+  color: #facc15;
+  font-weight: bold;
+}
+.table td.normal {
+  color: #22c55e;
+  font-weight: bold;
+}
+
+/* Modal */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.modal-content {
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 12px;
+  width: 500px;
+  padding: 25px;
+}
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 15px;
+  gap: 10px;
+}

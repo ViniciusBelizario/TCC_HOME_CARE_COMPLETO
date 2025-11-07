@@ -38,25 +38,22 @@
   let appointments = [];
 
   // Index para lookup rápido nos botões Detalhe/Confirmar
-  const indexAvail = new Map();      // id -> availability item
-  const indexAppt  = new Map();      // id -> appointment item
+  const indexAvail = new Map();
+  const indexAppt  = new Map();
 
-  // helpers
   function pad(n){ return String(n).padStart(2,'0'); }
   function toKey(d){ return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
   function formatDateLong(d){ return `${pad(d.getDate())} de ${ptMonths[d.getMonth()]}`; }
 
-  // Mostra exatamente o horário UTC que vem da API (termina com Z)
   function toUtcHM(iso) {
     const d = new Date(iso);
     return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
   }
-
   function formatRangeUTC(startsAt, endsAt){
     return `${toUtcHM(startsAt)} – ${toUtcHM(endsAt)}`;
   }
 
-  // Seletor de médico no topo
+  // ===== seletor de médico no topo
   injectDoctorSelect();
   function injectDoctorSelect(){
     const actions = document.querySelector('.agenda-actions');
@@ -73,7 +70,8 @@
     select.value = doctorId || medicos[0].id;
 
     select.addEventListener('change', async () => {
-      doctorId = select.value;
+      // ★ garante número
+      doctorId = Number.parseInt(select.value, 10);
       await loadMonthData();
       renderMonth(viewYear, viewMonth);
       renderPainel(selectedDate);
@@ -92,14 +90,14 @@
     const from = first.toISOString();
     const to = last.toISOString();
 
-    const qs = new URLSearchParams({ doctorId, from, to }).toString();
+    // ★ envia como string no QS, mas doctorId está consistente como número
+    const qs = new URLSearchParams({ doctorId: String(doctorId), from, to }).toString();
     const r = await fetch(`/agenda/data?${qs}`);
     if (!r.ok) { availability = []; appointments = []; return; }
     const data = await r.json();
     availability = Array.isArray(data.availability) ? data.availability : [];
     appointments = Array.isArray(data.appointments) ? data.appointments : [];
 
-    // montar índices
     indexAvail.clear(); availability.forEach(a => indexAvail.set(String(a.id), a));
     indexAppt.clear();  appointments.forEach(a => indexAppt.set(String(a.id), a));
   }
@@ -117,7 +115,7 @@
 
     const first = new Date(y, m, 1);
     const start = new Date(first);
-    start.setDate(first.getDate() - first.getDay()); // domingo
+    start.setDate(first.getDate() - first.getDay());
 
     const cells = [];
     for (let i=0;i<42;i++){
@@ -202,7 +200,6 @@
     renderList(disp, $listaDisp, 'info');
   }
 
-  // Delegação: clique nos botões Detalhe/Confirmar
   document.addEventListener('click', (e) => {
     const itemEl = e.target.closest('.appt-item');
     if (!itemEl) return;
@@ -296,7 +293,6 @@
 
   // ====== DISPONIBILIZAR AGENDA ======
 
-  // Abrir/fechar menu
   function toggleMenu(show){ $menuDisp.setAttribute('aria-hidden', show ? 'false' : 'true'); }
   toggleMenu(false);
   $btnDisp.addEventListener('click', (e) => {
@@ -306,7 +302,6 @@
   });
   document.addEventListener('click', () => toggleMenu(false));
 
-  // Abrir o modal correto ao clicar em uma opção
   $menuDisp.addEventListener('click', (e) => {
     const el = e.target.closest('.dropdown__item');
     if (!el) return;
@@ -334,21 +329,23 @@
     $form.addEventListener('submit', async (ev) => {
       ev.preventDefault();
       const fd = new FormData($form);
-      const inicio = fd.get('inicio'); // "HH:MM"
-      const fim    = fd.get('fim');    // "HH:MM"
+      const inicio = fd.get('inicio');
+      const fim    = fd.get('fim');
 
       const dateKey = toKey(selectedDate); // YYYY-MM-DD
-      const body = {
-        doctorId: Number(doctorId),
+      // ★ monta payload e só inclui doctorId se válido
+      const payload = {
         startsAt: `${dateKey}T${inicio}:00.000Z`,
         endsAt:   `${dateKey}T${fim}:00.000Z`
       };
+      if (Number.isInteger(doctorId) && doctorId > 0) {
+        payload.doctorId = doctorId;
+      }
 
       try {
-        await fetchJson('/agenda/availability', 'POST', body);
+        await fetchJson('/agenda/availability', 'POST', payload);
         toast('Horário disponibilizado.');
         closeModal();
-        // recarrega mês e painel
         await onMonthChange(new Date(viewYear, viewMonth, 1));
       } catch (e) {
         console.error(e);
@@ -375,21 +372,25 @@
     $form.addEventListener('submit', async (ev) => {
       ev.preventDefault();
       const fd = new FormData($form);
-      const inicioDia = fd.get('inicioDia'); // "HH:MM"
-      const fimDia    = fd.get('fimDia');    // "HH:MM"
-      const intervalo = Number(fd.get('intervalo')); // minutos
+      const inicioDia = fd.get('inicioDia');
+      const fimDia    = fd.get('fimDia');
+      const intervalo = Number(fd.get('intervalo'));
 
       const dateKey = toKey(selectedDate); // YYYY-MM-DD
-      const body = {
-        doctorId: Number(doctorId),
+
+      // ★ idem: inclui doctorId só se válido
+      const payload = {
         date: dateKey,
         startTime: inicioDia,
         endTime: fimDia,
         durationMin: intervalo
       };
+      if (Number.isInteger(doctorId) && doctorId > 0) {
+        payload.doctorId = doctorId;
+      }
 
       try {
-        const resp = await fetchJson('/agenda/availability/day-openings', 'POST', body);
+        const resp = await fetchJson('/agenda/availability/day-openings', 'POST', payload);
         const qnt = typeof resp?.created === 'number' ? resp.created : (resp?.generated ?? 0);
         toast(`Gerados ${qnt} horários.`);
         closeModal();
@@ -415,27 +416,6 @@
     return r.json();
   }
 
-  // ====== CONFIRMAÇÃO PENDENTE ======
-
-  function showCustomModal(title, innerHtml){
-    $modalSlot.innerHTML = `
-      <div class="modal">
-        <div class="modal__card">
-          <h2 class="modal__title">${title}</h2>
-          ${innerHtml}
-        </div>
-      </div>
-    `;
-    $modalRoot.classList.add('is-open');
-    $modalRoot.querySelector('.modal-backdrop').addEventListener('click', closeModal);
-    $modalRoot.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', closeModal));
-  }
-
-  function closeModal(){
-    $modalRoot.classList.remove('is-open');
-    $modalSlot.innerHTML = '';
-  }
-
   async function confirmPending(id, btn){
     try {
       if (btn) {
@@ -457,7 +437,6 @@
     }
   }
 
-  // Toast minimalista
   function toast(msg, isErr=false){
     let el = document.querySelector('.toast');
     if (!el){
@@ -477,7 +456,6 @@
     el._t = setTimeout(()=>{ el.style.display='none'; }, 2200);
   }
 
-  // Navegação
   $prev?.addEventListener('click', async () => {
     const d = new Date(viewYear, viewMonth-1, 1);
     await onMonthChange(d);
@@ -499,7 +477,6 @@
     renderPainel(selectedDate);
   }
 
-  // Inicialização
   const now = new Date();
   setSelected(now);
   renderMonth(now.getFullYear(), now.getMonth());

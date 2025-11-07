@@ -1,39 +1,77 @@
+<!--src\views\partials\_sidebar.ejs-->
+<%
+// Sidebar com controle por papel.
+// auth.* vem de res.locals (middleware setViewLocals)
+const r = (typeof auth?.role === 'string' ? auth.role : '').toLowerCase();
+const isAdmin = !!auth?.isAdmin;
+const isAtendente = !!auth?.isAtendente;
+const isMedico = !!auth?.isMedico;
+
+// Define a rota de Pacientes de forma dinâmica por papel
+const PACIENTES_PATH = isMedico ? '/pacientes-medico' : '/pacientes';
+
+// Rotas usadas no menu (centraliza aqui se precisar mudar paths)
+const ROUTES = {
+  dashboard: '/',
+  agenda: '/agenda',
+  pacientes: PACIENTES_PATH,
+  cadastro: '/cadastro',
+  relatorio: '/relatorio',
+  perfil: '/perfil',
+};
+%>
+
 <aside id="sidebar" class="sidebar">
   <div class="sidebar__top">
-    <a href="/" class="brand" aria-label="Página inicial">
+    <a href="<%= ROUTES.dashboard %>" class="brand" aria-label="Página inicial">
       <img src="/img/logo.png" alt="Connect Health" class="brand-logo--lg" />
     </a>
   </div>
 
   <nav class="menu">
-    <a class="menu__item" href="/" data-collapse-on-click title="Dashboard">
+    <!-- Sempre: Dashboard -->
+    <a class="menu__item" href="<%= ROUTES.dashboard %>" data-collapse-on-click title="Dashboard">
       <span class="menu__icon">🏠</span>
       <span class="menu__text">Dashboard</span>
       <span class="menu__rail">Dashboard</span>
     </a>
 
-    <a class="menu__item" href="/agenda" data-collapse-on-click title="Agenda">
-      <span class="menu__icon">🗓️</span>
-      <span class="menu__text">Agenda</span>
-      <span class="menu__rail">Agenda</span>
-    </a>
+    <% if (isAtendente || isMedico) { %>
+      <!-- Atendente & Médico: Agenda -->
+      <a class="menu__item" href="<%= ROUTES.agenda %>" data-collapse-on-click title="Agenda">
+        <span class="menu__icon">🗓️</span>
+        <span class="menu__text">Agenda</span>
+        <span class="menu__rail">Agenda</span>
+      </a>
 
-    <!-- Alterado: de /usuario (Usuários) para /pacientes (Pacientes) -->
-    <a class="menu__item" href="/pacientes" data-collapse-on-click title="Pacientes">
-      <span class="menu__icon">👥</span>
-      <span class="menu__text">Pacientes</span>
-      <span class="menu__rail">Pacientes</span>
-    </a>
+      <!-- Atendente & Médico: Pacientes (rota dinâmica por papel) -->
+      <a class="menu__item" href="<%= ROUTES.pacientes %>" data-collapse-on-click title="Pacientes">
+        <span class="menu__icon">👥</span>
+        <span class="menu__text">Pacientes</span>
+        <span class="menu__rail">Pacientes</span>
+      </a>
+    <% } %>
 
-    <a class="menu__item" href="/relatorio" data-collapse-on-click title="Relatórios">
-      <span class="menu__icon">📊</span>
-      <span class="menu__text">Relatórios</span>
-      <span class="menu__rail">Relatórios</span>
-    </a>
+    <% if (isAdmin) { %>
+      <!-- Admin: Cadastro -->
+      <a class="menu__item" href="<%= ROUTES.cadastro %>" data-collapse-on-click title="Cadastro">
+        <span class="menu__icon">🧩</span>
+        <span class="menu__text">Cadastro</span>
+        <span class="menu__rail">Cadastro</span>
+      </a>
+
+      <!-- Admin: Relatórios -->
+      <a class="menu__item" href="<%= ROUTES.relatorio %>" data-collapse-on-click title="Relatórios">
+        <span class="menu__icon">📊</span>
+        <span class="menu__text">Relatórios</span>
+        <span class="menu__rail">Relatórios</span>
+      </a>
+    <% } %>
 
     <hr class="menu__sep">
 
-    <a class="menu__item" href="/perfil" title="Perfil">
+    <!-- Sempre: Perfil -->
+    <a class="menu__item" href="<%= ROUTES.perfil %>" title="Perfil">
       <span class="menu__icon">⚙️</span>
       <span class="menu__text">Perfil</span>
       <span class="menu__rail">Perfil</span>

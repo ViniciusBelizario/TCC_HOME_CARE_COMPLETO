@@ -7,6 +7,7 @@ const appointmentsRoutes = require('./appointments.routes');
 const uploadsRoutes = require('./uploads.routes');
 const reportsRoutes = require('./reports.routes');
 const auditRoutes = require('./audit.routes'); // <— novo
+const attendantsRoutes = require('./attendants.routes');
 
 const router = Router();
 
@@ -18,5 +19,6 @@ router.use('/appointments', appointmentsRoutes);
 router.use('/exams', uploadsRoutes);
 router.use('/reports', reportsRoutes);
 router.use('/audit', auditRoutes); // <— novo
+router.use('/attendants', attendantsRoutes);
 
 module.exports = router;

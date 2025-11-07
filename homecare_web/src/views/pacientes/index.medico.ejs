@@ -1,0 +1,54 @@
+<%- include('../partials/_head', { titulo }) %>
+<%- include('../partials/_sidebar') %>
+
+<link rel="stylesheet" href="/css/paciente.css">
+
+<section class="pacientes-container">
+  <div class="pacientes-header">
+    <h1>Pacientes (visão do Médico)</h1>
+    <!-- Exemplo: médico não cadastra pacientes; pode ter filtros clínicos -->
+    <div class="filters">
+      <form class="filters__form" id="filtrosMedico">
+        <input class="input" name="q" placeholder="Buscar por nome, CPF..." />
+        <button class="btn btn--primary" type="submit">Buscar</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="pacientes-table">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Nome</th>
+          <th>Telefone</th>
+          <th>Detalhes</th>
+        </tr>
+      </thead>
+      <tbody id="pacientesTbody">
+        <% (pacientes || []).forEach(p => { %>
+          <tr data-id="<%= p.id %>">
+            <td><%= p.id %></td>
+            <td><%= p.name %></td>
+            <td><%= p.patientProfile?.phone || '-' %></td>
+            <td><button class="btn btn--sm btn-detail">Abrir</button></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- Modal root -->
+<div class="modal-root">
+  <div class="modal-backdrop" data-close></div>
+  <div class="modal-slot"></div>
+</div>
+
+<script>
+  window.PACIENTES = <%- JSON.stringify(pacientes || []) %>;
+  window.VISAO = 'MEDICO';
+</script>
+<script src="/js/paciente.js"></script>
+
+<%- include('../partials/_foot') %>

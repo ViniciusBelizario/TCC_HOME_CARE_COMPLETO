@@ -1,8 +1,9 @@
 import { Router } from 'express';
-import * as Rel from '../controllers/relatorio.controller.js';
+import { view } from '../controllers/relatorio.controller.js';
 
 const router = Router();
 
-router.get('/', Rel.index);
+// URL final será /relatorio (porque vamos montar em app.use('/relatorio', ...))
+router.get('/', view);
 
 export default router;

@@ -1,7 +1,6 @@
-<link rel="stylesheet" href="/css/agenda.css">
+<link rel="stylesheet" href="/css/agenda.css" />
 
 <section class="agenda-wrap">
-  <!-- Cabeçalho da data + ações -->
   <div class="agenda-header">
     <div class="agenda-actions">
       <div class="dropdown">
@@ -17,13 +16,12 @@
 
     <div class="agenda-month-nav">
       <button class="btn btn--ghost btn--sm" id="prevMonth" aria-label="Mês anterior">◀</button>
-      <button class="btn btn--ghost btn--sm" id="todayBtn"  aria-label="Hoje">Hoje</button>
+      <button class="btn btn--ghost btn--sm" id="todayBtn" aria-label="Hoje">Hoje</button>
       <button class="btn btn--ghost btn--sm" id="nextMonth" aria-label="Próximo mês">▶</button>
     </div>
   </div>
 
   <div class="agenda-grid">
-    <!-- Calendário -->
     <div class="agenda-calendar">
       <div class="calendar-head">
         <div class="month-title" id="monthTitle">Mês Ano</div>
@@ -34,7 +32,6 @@
       <div id="calendarDays" class="calendar-days"></div>
     </div>
 
-    <!-- Painel do dia -->
     <aside class="agenda-panel" id="agendaPanel">
       <h2 class="panel-title">Consultas do dia</h2>
 
@@ -62,7 +59,7 @@
   </div>
 </section>
 
-<!-- Modais (sem campo Médico) -->
+<!-- Modais -->
 <script type="text/template" id="tplModalEspecifica">
   <div class="modal">
     <div class="modal__card">
@@ -114,7 +111,7 @@
 </script>
 
 <script>
-  // Médicos já vêm da API
+  // Médicos vindos do controller (já no formato correto)
   window.AGENDA_MEDICOS = <%- JSON.stringify(medicos || []) %>;
 </script>
 <script src="/js/agenda.js"></script>

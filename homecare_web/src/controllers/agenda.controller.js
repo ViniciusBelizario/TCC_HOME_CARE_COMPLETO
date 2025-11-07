@@ -4,10 +4,20 @@ import { apiGet, apiPatch, apiPost } from '../services/api.service.js';
 export const calendario = async (req, res) => {
   try {
     const token = req.session?.token;
-    const doctors = await apiGet('/doctors', token);
-    const medicos = (Array.isArray(doctors) ? doctors : []).map(d => ({
+    // /doctors é paginado => vem { items, total, ... }
+    // pede um pageSize maior pra evitar múltiplas chamadas
+    const doctorsResp = await apiGet('/doctors', token, { page: 1, pageSize: 100 });
+
+    const list = Array.isArray(doctorsResp)
+      ? doctorsResp
+      : (Array.isArray(doctorsResp?.items) ? doctorsResp.items : []);
+
+    const medicos = list.map(d => ({
       id: d.id,
-      nome: d.name
+      nome: d.name,
+      email: d.email,
+      crm: d.doctorProfile?.crm ?? null,
+      specialty: d.doctorProfile?.specialty ?? null,
     }));
 
     res.render('agenda/index', {
@@ -26,14 +36,18 @@ export const getData = async (req, res) => {
     const token = req.session?.token;
     if (!token) return res.status(401).json({ error: 'unauthorized' });
 
-    const { doctorId, from, to } = req.query;
-    if (!doctorId) return res.status(400).json({ error: 'doctorId obrigatório' });
+    let { doctorId, from, to } = req.query;
+    const doctorIdNum = Number.parseInt(doctorId, 10);
+
+    if (!Number.isInteger(doctorIdNum) || doctorIdNum <= 0) {
+      return res.status(400).json({ error: 'doctorId obrigatório e deve ser inteiro' });
+    }
 
     const availability = await apiGet('/availability', token, {
-      doctorId, ...(from ? { from } : {}), ...(to ? { to } : {})
+      doctorId: doctorIdNum, ...(from ? { from } : {}), ...(to ? { to } : {})
     });
 
-    const appointments = await apiGet(`/appointments/doctor/${doctorId}`, token, { from, to });
+    const appointments = await apiGet(`/appointments/doctor/${doctorIdNum}`, token, { from, to });
 
     res.json({ availability, appointments });
   } catch (e) {
@@ -42,7 +56,7 @@ export const getData = async (req, res) => {
   }
 };
 
-// POST /agenda/appointments/:id/confirm  -> confirma consulta
+// POST /agenda/appointments/:id/confirm
 export const confirmAppointment = async (req, res) => {
   try {
     const token = req.session?.token;
@@ -59,14 +73,21 @@ export const confirmAppointment = async (req, res) => {
   }
 };
 
-// POST /agenda/availability        -> disponibilizar específica
+// POST /agenda/availability  -> disponibilizar específica
 export const createAvailability = async (req, res) => {
   try {
     const token = req.session?.token;
     if (!token) return res.status(401).json({ error: 'unauthorized' });
 
-    const body = req.body; // { doctorId, startsAt, endsAt }
-    const data = await apiPost('/availability', token, body);
+    const { doctorId, startsAt, endsAt } = req.body || {};
+    const doctorIdNum = Number.parseInt(doctorId, 10);
+
+    if (!Number.isInteger(doctorIdNum) || doctorIdNum <= 0) {
+      return res.status(400).json({ error: 'doctorId obrigatório e deve ser inteiro' });
+    }
+
+    const payload = { doctorId: doctorIdNum, startsAt, endsAt };
+    const data = await apiPost('/availability', token, payload);
     res.json(data);
   } catch (e) {
     console.error('createAvailability error:', e);
@@ -74,14 +95,28 @@ export const createAvailability = async (req, res) => {
   }
 };
 
-// POST /agenda/availability/day-openings -> disponibilizar em lote
+// POST /agenda/availability/day-openings -> disponibilizar em lote (dia)
 export const createDayOpenings = async (req, res) => {
   try {
     const token = req.session?.token;
     if (!token) return res.status(401).json({ error: 'unauthorized' });
 
-    const body = req.body; // { doctorId, date, startTime, endTime, durationMin }
-    const data = await apiPost('/availability/day-openings', token, body);
+    const { doctorId, date, startTime, endTime, durationMin } = req.body || {};
+    const doctorIdNum = Number.parseInt(doctorId, 10);
+
+    if (!Number.isInteger(doctorIdNum) || doctorIdNum <= 0) {
+      return res.status(400).json({ error: 'doctorId obrigatório e deve ser inteiro' });
+    }
+
+    const payload = {
+      doctorId: doctorIdNum,
+      date,
+      startTime,
+      endTime,
+      durationMin: Number(durationMin)
+    };
+
+    const data = await apiPost('/availability/day-openings', token, payload);
     res.json(data);
   } catch (e) {
     console.error('createDayOpenings error:', e);

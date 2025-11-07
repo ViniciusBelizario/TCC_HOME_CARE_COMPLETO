@@ -5,13 +5,16 @@ import * as Paciente from '../controllers/paciente.controller.js';
 
 const router = Router();
 
-// Lista + tela
+// Tela + lista
 router.get('/', ensureAuth, Paciente.listarPacientes);
 
-// Detalhe JSON (usado pelo fetch do front)
+// Endpoint leve para auto-refresh
+router.get('/_list.json', ensureAuth, Paciente.listarPacientesJson);
+
+// Detalhe JSON
 router.get('/:id', ensureAuth, Paciente.pacienteDetalhe);
 
-// Criação (proxy para a API)
+// Criação (proxy)
 router.post('/', ensureAuth, Paciente.criarPaciente);
 
 export default router;

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../core/colors.dart';
 import '../widgets/custom_bottom_nav.dart';
 import 'home_screen.dart';
@@ -16,10 +17,9 @@ class _AgendaScreenState extends State<AgendaScreen> {
   List<AppointmentItem> _itens = [];
   bool _loading = true;
 
-  String _ddMM(DateTime d) =>
-      "${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}";
-  String _hhmm(DateTime d) =>
-      "${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}";
+  // formatadores (usam fuso do aparelho)
+  final _fmtData = DateFormat('dd/MM');
+  final _fmtHora = DateFormat('HH:mm');
 
   String statusText(ApptStatus s) {
     switch (s) {
@@ -130,7 +130,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text("${_ddMM(a.startsAt)} às ${_hhmm(a.startsAt)}",
+                      Text("${_fmtData.format(a.startsAt)} às ${_fmtHora.format(a.startsAt)}",
                           style: const TextStyle(fontWeight: FontWeight.bold)),
                       const SizedBox(height: 6),
                       Text(

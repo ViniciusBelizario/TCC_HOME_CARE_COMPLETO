@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../core/colors.dart';
 import '../services/doctors_service.dart';
 import '../services/availability_service.dart';
@@ -38,6 +39,9 @@ class _NewServiceScreenState extends State<NewServiceScreen> {
   List<Slot> _slots = [];
   bool _loadingDoctors = true;
   bool _loadingSlots = false;
+
+  // formatador de hora (usa fuso do aparelho)
+  final _fmtHora = DateFormat('HH:mm');
 
   @override
   void initState() {
@@ -79,9 +83,10 @@ class _NewServiceScreenState extends State<NewServiceScreen> {
       final to = from.add(const Duration(days: 14));
       _slots = await _availSvc.list(doctorId: _doctorId!, from: from, to: to);
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Erro ao carregar horários: $e')));
+      }
     } finally {
       if (mounted) setState(() => _loadingSlots = false);
     }
@@ -109,6 +114,7 @@ class _NewServiceScreenState extends State<NewServiceScreen> {
   List<DateTime> get _nextFiveDays {
     final now = DateTime.now();
     return List.generate(5, (i) => DateTime(now.year, now.month, now.day + i));
+    // ^ datas já locais
   }
 
   // slots por dia
@@ -168,7 +174,6 @@ class _NewServiceScreenState extends State<NewServiceScreen> {
         "Endereço: $address",
       ].join("\n");
 
-      // não precisamos guardar o retorno aqui
       await _apptSvc.create(slotId: _selectedSlotId!, notes: notes);
 
       if (_filePath != null && _filePath!.isNotEmpty) {
@@ -357,9 +362,7 @@ class _NewServiceScreenState extends State<NewServiceScreen> {
                     ? [const Text("Sem horários para este dia.")]
                     : _slotsOfDay(_selectedDate!).map((s) {
                         final sel = _selectedSlotId == s.id;
-                        final hh = s.startsAt.hour.toString().padLeft(2, '0');
-                        final mm = s.startsAt.minute.toString().padLeft(2, '0');
-                        final label = "$hh:$mm";
+                        final label = _fmtHora.format(s.startsAt); // <- aqui
                         return GestureDetector(
                           onTap: () => setState(() => _selectedSlotId = s.id),
                           child: Container(
@@ -544,8 +547,7 @@ class _NewServiceScreenState extends State<NewServiceScreen> {
   Widget _step5() {
     final s = _slots.firstWhere((x) => x.id == _selectedSlotId);
     final DateTime d = s.startsAt;
-    final horario =
-        "${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}";
+    final horario = _fmtHora.format(d);
     final addr = _useOtherAddress && _otherAddressCtrl.text.trim().isNotEmpty
         ? _otherAddressCtrl.text.trim()
         : _defaultAddress;

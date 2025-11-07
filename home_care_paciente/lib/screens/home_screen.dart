@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../core/colors.dart';
 import '../widgets/consulta_card.dart';
 import '../widgets/info_card.dart';
@@ -19,10 +20,9 @@ class _HomeScreenState extends State<HomeScreen> {
   List<AppointmentItem> _consultas = [];
   bool _loading = true;
 
-  String _ddmm(DateTime d) =>
-      "${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}";
-  String _hhmm(DateTime d) =>
-      "${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}";
+  // formatadores
+  final _fmtData = DateFormat('dd/MM');
+  final _fmtHora = DateFormat('HH:mm');
 
   Future<void> _load() async {
     setState(() => _loading = true);
@@ -32,7 +32,8 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Erro ao carregar consultas: $e')));
+          SnackBar(content: Text('Erro ao carregar consultas: $e')),
+        );
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -44,8 +45,9 @@ class _HomeScreenState extends State<HomeScreen> {
     if (result is bool && result == true) {
       await _load(); // recarrega após agendar
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Agendamento enviado!')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Agendamento enviado!')),
+      );
     }
   }
 
@@ -55,7 +57,7 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
     if (index == 0) {
-      // /perfil futuro
+      Navigator.pushReplacementNamed(context, '/perfil');
     } else if (index == 2) {
       Navigator.pushReplacementNamed(context, '/agenda');
     } else {
@@ -110,12 +112,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 10),
                     for (final c in _consultas)
                       ConsultaCard(
-                        data: _ddmm(c.startsAt),
+                        data: _fmtData.format(c.startsAt),
                         titulo: c.doctorName.isNotEmpty
                             ? "Consulta com ${c.doctorName}"
                             : "Consulta",
                         subtitulo: (c.notes ?? '').isEmpty ? " " : c.notes!,
-                        hora: _hhmm(c.startsAt),
+                        hora: _fmtHora.format(c.startsAt),
                       ),
                     const SizedBox(height: 18),
                     const Text(
@@ -149,8 +151,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       text: "Solicitar atendimento domiciliar",
                       onPressed: _openWizard,
                     ),
-                    const SizedBox(height: 10),
-                    BigButton(text: "Chat com enfermeiro", onPressed: () {}),
                     const SizedBox(height: 28),
                   ],
                 ),

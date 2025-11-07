@@ -6,8 +6,11 @@ import 'screens/home_screen.dart';
 import 'screens/agenda_screen.dart';
 import 'screens/new_service_screen.dart';
 import 'screens/perfil_screen.dart';
+import 'core/time.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  Time.init(); // <- faltava o ';' aqui
   runApp(const HomeCareApp());
 }
 

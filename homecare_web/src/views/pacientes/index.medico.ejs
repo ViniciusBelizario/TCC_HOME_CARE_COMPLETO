@@ -1,17 +1,10 @@
-<%- include('../partials/_head', { titulo }) %>
-<%- include('../partials/_sidebar') %>
-
 <link rel="stylesheet" href="/css/paciente.css">
 
 <section class="pacientes-container">
   <div class="pacientes-header">
-    <h1>Pacientes (visão do Médico)</h1>
-    <!-- Exemplo: médico não cadastra pacientes; pode ter filtros clínicos -->
-    <div class="filters">
-      <form class="filters__form" id="filtrosMedico">
-        <input class="input" name="q" placeholder="Buscar por nome, CPF..." />
-        <button class="btn btn--primary" type="submit">Buscar</button>
-      </form>
+    <h1>Pacientes (Médico)</h1>
+    <div class="search">
+      <input id="q" class="input" placeholder="Buscar por nome ou CPF" />
     </div>
   </div>
 
@@ -22,7 +15,8 @@
           <th>ID</th>
           <th>Nome</th>
           <th>Telefone</th>
-          <th>Detalhes</th>
+          <th>Atualizado</th>
+          <th></th>
         </tr>
       </thead>
       <tbody id="pacientesTbody">
@@ -31,7 +25,8 @@
             <td><%= p.id %></td>
             <td><%= p.name %></td>
             <td><%= p.patientProfile?.phone || '-' %></td>
-            <td><button class="btn btn--sm btn-detail">Abrir</button></td>
+            <td><%= p.updatedAt ? new Date(p.updatedAt).toLocaleString('pt-BR') : '—' %></td>
+            <td><button class="btn btn--sm btn-detail">Ver</button></td>
           </tr>
         <% }) %>
       </tbody>
@@ -39,7 +34,6 @@
   </div>
 </section>
 
-<!-- Modal root -->
 <div class="modal-root">
   <div class="modal-backdrop" data-close></div>
   <div class="modal-slot"></div>
@@ -47,8 +41,6 @@
 
 <script>
   window.PACIENTES = <%- JSON.stringify(pacientes || []) %>;
-  window.VISAO = 'MEDICO';
+  window.AUTH = <%- JSON.stringify(auth || {}) %>;
 </script>
-<script src="/js/paciente.js"></script>
-
-<%- include('../partials/_foot') %>
+<script src="/js/paciente-medico.js"></script>

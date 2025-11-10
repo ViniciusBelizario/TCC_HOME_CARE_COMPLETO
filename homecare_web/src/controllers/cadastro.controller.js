@@ -72,9 +72,7 @@ export async function getDoctors(req, res) {
     if (req.query?.cpf) query.cpf = String(req.query.cpf).replace(/\D/g, '');
 
     const list = await apiGet('/doctors', token, query);
-    // Pode vir como array ou {items:[]}
     const raw = Array.isArray(list) ? list : (list?.items || list?.data || []);
-    // Normaliza campos
     const data = raw.map(d => ({
       id: d.id,
       name: d.name,
@@ -114,6 +112,28 @@ export async function getAttendants(req, res) {
   } catch (err) {
     const { status, message } = parseApiError(err);
     return res.status(status).json({ error: message });
+  }
+}
+
+// POST /cadastro/users/:id/reset-senha -> proxy para POST {{BASE_URL}}/users/:id/reset-password
+export async function postResetUserPassword(req, res) {
+  const token = getToken(req, res);
+  if (!token) return res.status(401).json({ ok: false, message: 'Usuário não autenticado (sessão/token ausente).' });
+
+  try {
+    const { id } = req.params;
+    const payload = await apiPost(`/users/${id}/reset-password`, token, {});
+
+    return res.json({
+      ok: true,
+      message: payload?.message || 'Senha resetada.',
+      targetUserId: payload?.targetUserId ?? Number(id),
+      targetRole: payload?.targetRole ?? null,
+      temporaryPasswordHint: payload?.temporaryPasswordHint || null,
+    });
+  } catch (err) {
+    const { status, message } = parseApiError(err);
+    return res.status(status).json({ ok: false, message });
   }
 }
 

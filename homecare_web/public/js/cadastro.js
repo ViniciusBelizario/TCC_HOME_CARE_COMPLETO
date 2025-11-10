@@ -8,6 +8,31 @@ function onlyDigits(s){ return String(s||'').replace(/\D/g,''); }
 function escapeHtml(s){ return String(s??'').replace(/[&<>"'`=\/]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','/':'&#x2F;','`':'&#x60;','=':'&#x3D;'}[c])); }
 async function safeJson(res){ try { return await res.json(); } catch { return null; } }
 
+// Toast básico no padrão do sistema
+function toast({ title='Aviso', message='', variant='success', timeout=6000 }){
+  let stack = qs('#toast-stack');
+  if (!stack) {
+    stack = document.createElement('div');
+    stack.id = 'toast-stack';
+    stack.className = 'toast-stack';
+    document.body.appendChild(stack);
+  }
+  const el = document.createElement('div');
+  el.className = `toast toast--${variant}`;
+  el.innerHTML = `
+    <div class="toast__bar"></div>
+    <div class="toast__content">
+      <strong class="toast__title">${escapeHtml(title)}</strong>
+      <p class="toast__message">${escapeHtml(message)}</p>
+    </div>
+    <button class="toast__close" aria-label="Fechar">&times;</button>
+  `;
+  stack.appendChild(el);
+  const close = () => { el.classList.add('toast--hide'); setTimeout(()=>el.remove(), 250); };
+  el.querySelector('.toast__close')?.addEventListener('click', close);
+  setTimeout(close, timeout);
+}
+
 // CPF mask + fmt
 function maskCPF(value){ return String(value||'').replace(/\D/g,'').slice(0,11).replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d{1,2})$/,'$1-$2'); }
 function fmtCPF(d){ const v=onlyDigits(d); return v.length===11?v.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/,(_,$1,$2,$3,$4)=>`${$1}.${$2}.${$3}-${$4}`):v; }
@@ -44,44 +69,67 @@ function validateDoctorPayload(raw){
 // ----------------- Listagens -----------------
 async function loadDoctors(params={}){
   const tbody=qs('#doctors-table tbody'); if(!tbody) return;
-  tbody.innerHTML=`<tr><td colspan="6">Carregando...</td></tr>`;
+  tbody.innerHTML=`<tr><td colspan="7">Carregando...</td></tr>`;
   try{
     const usp=new URLSearchParams(params); const res=await fetch(`/cadastro/doctors?${usp.toString()}`,{method:'GET'}); const data=await safeJson(res);
     if(!res.ok) throw new Error(data?.error||data?.message||'Falha ao carregar médicos.');
     const items=Array.isArray(data?.data)?data.data:[];
     renderDoctorsTable(items);
-  }catch(err){ tbody.innerHTML=`<tr><td colspan="6" style="color:#b71c1c;">${escapeHtml(err.message||'Erro ao carregar.')}</td></tr>`; }
+  }catch(err){ tbody.innerHTML=`<tr><td colspan="7" style="color:#b71c1c;">${escapeHtml(err.message||'Erro ao carregar.')}</td></tr>`; }
 }
 function renderDoctorsTable(items){
-  const tbody=qs('#doctors-table tbody'); const rows=items.map(d=>`<tr>
+  const tbody=qs('#doctors-table tbody');
+  const rows=items.map(d=>`<tr data-user-id="${escapeHtml(String(d?.id??''))}">
     <td>${escapeHtml(d?.name??'')}</td>
     <td>${escapeHtml(d?.email??'')}</td>
     <td>${escapeHtml(fmtCPF(d?.cpf||''))}</td>
     <td>${escapeHtml(d?.specialty??'')}</td>
     <td>${escapeHtml(d?.crm??'')}</td>
     <td>${escapeHtml(fmtDate(d?.createdAt))}</td>
+    <td><button type="button" class="btn btn-warning btn-reset" title="Resetar senha">Resetar senha</button></td>
   </tr>`).join('');
-  tbody.innerHTML = rows || `<tr><td colspan="6">Nenhum médico encontrado.</td></tr>`;
+  tbody.innerHTML = rows || `<tr><td colspan="7">Nenhum médico encontrado.</td></tr>`;
 }
 
 async function loadAttendants(params={}){
   const tbody=qs('#attendants-table tbody'); if(!tbody) return;
-  tbody.innerHTML=`<tr><td colspan="4">Carregando...</td></tr>`;
+  tbody.innerHTML=`<tr><td colspan="5">Carregando...</td></tr>`;
   try{
     const usp=new URLSearchParams(params); const res=await fetch(`/cadastro/attendants?${usp.toString()}`,{method:'GET'}); const data=await safeJson(res);
     if(!res.ok) throw new Error(data?.error||data?.message||'Falha ao carregar atendentes.');
     const items=Array.isArray(data?.data)?data.data:[];
     renderAttendantsTable(items);
-  }catch(err){ tbody.innerHTML=`<tr><td colspan="4" style="color:#b71c1c;">${escapeHtml(err.message||'Erro ao carregar.')}</td></tr>`; }
+  }catch(err){ tbody.innerHTML=`<tr><td colspan="5" style="color:#b71c1c;">${escapeHtml(err.message||'Erro ao carregar.')}</td></tr>`; }
 }
 function renderAttendantsTable(items){
-  const tbody=qs('#attendants-table tbody'); const rows=items.map(a=>`<tr>
+  const tbody=qs('#attendants-table tbody');
+  const rows=items.map(a=>`<tr data-user-id="${escapeHtml(String(a?.id??''))}">
     <td>${escapeHtml(a?.name??'')}</td>
     <td>${escapeHtml(a?.email??'')}</td>
     <td>${escapeHtml(fmtCPF(a?.cpf||''))}</td>
     <td>${escapeHtml(fmtDate(a?.createdAt))}</td>
+    <td><button type="button" class="btn btn-warning btn-reset" title="Resetar senha">Resetar senha</button></td>
   </tr>`).join('');
-  tbody.innerHTML = rows || `<tr><td colspan="4">Nenhum atendente encontrado.</td></tr>`;
+  tbody.innerHTML = rows || `<tr><td colspan="5">Nenhum atendente encontrado.</td></tr>`;
+}
+
+// ----------------- Reset de senha -----------------
+async function resetUserPassword(userId){
+  const res = await fetch(`/cadastro/users/${encodeURIComponent(userId)}/reset-senha`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  });
+  const data = await safeJson(res);
+  if (!res.ok || data?.ok === false) {
+    const msg = data?.message || 'Falha ao resetar a senha.';
+    throw new Error(msg);
+  }
+  const hint = data?.temporaryPasswordHint ? ` Dica: ${data.temporaryPasswordHint}.` : '';
+  toast({
+    title: 'Senha resetada',
+    message: `${data?.message || 'Senha resetada com sucesso.'}${hint} O usuário deverá alterá-la no primeiro acesso.`,
+    variant: 'success'
+  });
 }
 
 // ----------------- Init -----------------
@@ -116,7 +164,6 @@ document.addEventListener('DOMContentLoaded',()=>{
       }
       showAlert('success','Atendente cadastrado com sucesso!');
       formAtt.reset(); setTimeout(closeModal,900);
-      // Se aba de atendentes ativa, atualiza
       if (qs('#tab-attendants').classList.contains('is-active')) { await doSearchOrRefresh(); }
     }catch(err){ showAlert('error',err.message||'Erro ao cadastrar.'); } finally{ setSubmitting(formAtt,false); }
   });
@@ -146,19 +193,16 @@ document.addEventListener('DOMContentLoaded',()=>{
   const panelDoctors=qs('#tab-doctors'); const panelAtt=qs('#tab-attendants');
   function activateTab(target){
     const isDoctors = target==='doctors';
-    // header buttons
     tabBtnDoctors.classList.toggle('is-active',isDoctors);
     tabBtnAtt.classList.toggle('is-active',!isDoctors);
     tabBtnDoctors.setAttribute('aria-selected', String(isDoctors));
     tabBtnAtt.setAttribute('aria-selected', String(!isDoctors));
-    // panels
     panelDoctors.classList.toggle('is-active',isDoctors);
     panelDoctors.hidden = !isDoctors;
     panelAtt.classList.toggle('is-active',!isDoctors);
     panelAtt.hidden = isDoctors;
-    // search type follows tab
     qs('#search-type').value = isDoctors ? 'doctors' : 'attendants';
-    doSearchOrRefresh(); // carrega conforme busca atual
+    doSearchOrRefresh();
   }
   tabBtnDoctors?.addEventListener('click',()=>activateTab('doctors'));
   tabBtnAtt?.addEventListener('click',()=>activateTab('attendants'));
@@ -178,17 +222,32 @@ document.addEventListener('DOMContentLoaded',()=>{
     else await loadDoctors(params);
   }
 
-  // Quando muda o "Tipo" manualmente, também troca aba
-  selType?.addEventListener('change',()=>{
-    activateTab(selType.value==='doctors'?'doctors':'attendants');
-  });
+  selType?.addEventListener('change',()=>{ activateTab(selType.value==='doctors'?'doctors':'attendants'); });
   btnSearch?.addEventListener('click', doSearchOrRefresh);
   inp?.addEventListener('keydown', e => { if(e.key==='Enter'){ e.preventDefault(); doSearchOrRefresh(); } });
   btnClear?.addEventListener('click', ()=>{ inp.value=''; doSearchOrRefresh(); });
 
-  // Botões atualizar de cada aba
   qs('#btn-refresh-doctors')?.addEventListener('click',()=>doSearchOrRefresh());
   qs('#btn-refresh-attendants')?.addEventListener('click',()=>doSearchOrRefresh());
+
+  // Delegação: clicar em "Resetar senha" nas duas tabelas
+  document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.btn-reset');
+    if (!btn) return;
+    const tr = btn.closest('tr');
+    const userId = tr?.dataset?.userId;
+    if (!userId) return;
+    try {
+      btn.disabled = true;
+      btn.textContent = 'Processando...';
+      await resetUserPassword(userId);
+    } catch (err) {
+      toast({ title: 'Falha ao resetar', message: err?.message || 'Erro ao resetar senha.', variant: 'danger' });
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Resetar senha';
+    }
+  });
 
   // Primeira carga: aba Médicos ativa
   activateTab('doctors');

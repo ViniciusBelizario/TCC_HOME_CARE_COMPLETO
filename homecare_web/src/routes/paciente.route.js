@@ -1,20 +1,32 @@
 // src/routes/paciente.route.js
 import { Router } from 'express';
-import { ensureAuth } from '../middlewares/auth.middleware.js';
-import * as Paciente from '../controllers/paciente.controller.js';
+import { ensureAuth, allowRoles } from '../middlewares/auth.middleware.js';
+import {
+  listarPacientes,
+  listarPacientesJson,
+  pacienteDetalhe,
+  criarPaciente,
+  resetSenhaPaciente,
+  buscarPacientes,
+} from '../controllers/paciente.controller.js';
 
 const router = Router();
 
-// Tela + lista
-router.get('/', ensureAuth, Paciente.listarPacientes);
+// Todas exigem login
+router.use(ensureAuth);
 
-// Endpoint leve para auto-refresh
-router.get('/_list.json', ensureAuth, Paciente.listarPacientesJson);
+// 1) Listagem por papel
+router.get('/', allowRoles('admin', 'atendente', 'medico', 'paciente'), listarPacientes);
 
-// Detalhe JSON
-router.get('/:id', ensureAuth, Paciente.pacienteDetalhe);
+// 2) Endpoints ESPECÍFICOS devem vir ANTES dos parâmetros dinâmicos
+router.get('/_list.json', allowRoles('admin', 'atendente', 'medico'), listarPacientesJson);
+router.get('/busca', allowRoles('admin', 'atendente', 'medico'), buscarPacientes);
 
-// Criação (proxy)
-router.post('/', ensureAuth, Paciente.criarPaciente);
+// 3) Rotas dinâmicas por ID (depois)
+router.get('/:id', allowRoles('admin', 'atendente', 'medico'), pacienteDetalhe);
+router.post('/:id/reset-senha', allowRoles('admin', 'atendente'), resetSenhaPaciente);
+
+// 4) Criação (não conflita com GETs)
+router.post('/', allowRoles('admin', 'atendente'), criarPaciente);
 
 export default router;

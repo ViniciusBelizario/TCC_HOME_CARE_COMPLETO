@@ -12,6 +12,9 @@ import pacienteRoutes from './routes/paciente.route.js';
 import cadastroRoutes from './routes/cadastro.routes.js';
 import perfilRouter from './routes/perfil.route.js';
 import relatorioRoute from './routes/relatorio.route.js';
+import homeRoute from './routes/home.route.js';
+import medicoRoute from './routes/medico.route.js';
+import agendaMedicoRoute from './routes/agenda.medico.route.js';
 
 import errorMiddleware from './middlewares/error.middleware.js';
 import { setViewLocals } from './middlewares/view-locals.middleware.js';
@@ -62,7 +65,9 @@ app.use('/usuario', usuarioRoute);
 app.use('/agenda', agendaRoute);
 app.use('/pacientes', pacienteRoutes);
 app.use('/relatorio', relatorioRoute);
-
+app.use('/medico', medicoRoute);
+app.use('/agenda-medico', agendaMedicoRoute);
+app.use('/', homeRoute);  // / (Home) protegida por ensureAuth
 // Protege /cadastro com sessão e papel admin
 app.use('/cadastro', ensureAuth, allowRoles('admin'), cadastroRoutes);
 app.use('/perfil', perfilRouter);

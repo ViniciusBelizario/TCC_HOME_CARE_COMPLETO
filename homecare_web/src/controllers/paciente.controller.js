@@ -29,6 +29,7 @@ function normalizePatient(raw) {
       address: profile.address ?? raw.address ?? '',
       birthDate: profile.birthDate ?? raw.birthDate ?? null,
     },
+    updatedAt: raw.updatedAt ?? raw.patient?.updatedAt ?? null,
     _raw: raw,
   };
 }
@@ -43,7 +44,7 @@ async function getFirstAvailable(token, paths) {
     } catch (err) {
       lastErr = err;
       const status = parseStatusFromError(err);
-      if (status && status !== 404) throw err; // 401/403/500: para por aqui
+      if (status && status !== 404) throw err; // 401/403/500: para aqui
     }
   }
   throw lastErr;
@@ -52,18 +53,12 @@ async function getFirstAvailable(token, paths) {
 /** Decide qual view de /pacientes renderizar conforme o papel */
 function selectPacientesView(res) {
   const role = String(res?.locals?.auth?.role || '').toLowerCase();
-  // você pediu: diferente para MÉDICO e PACIENTE
-  if (role === 'medico' || role === 'médico' || role === 'doctor') {
-    return 'pacientes/index.medico';   // novo arquivo
-  }
-  if (role === 'paciente' || role === 'patient') {
-    return 'pacientes/index';          // seu arquivo atual
-  }
-  // Outros papéis (ex.: atendente/admin): escolha um padrão
-  return 'pacientes/index';            // pode ter um index.atendente se quiser
+  if (role === 'medico' || role === 'médico' || role === 'doctor') return 'pacientes/index.medico';
+  if (role === 'paciente' || role === 'patient') return 'pacientes/index';
+  return 'pacientes/index'; // atendente/admin
 }
 
-/** GET /pacientes -> renderiza view conforme o papel */
+/** GET /pacientes */
 export async function listarPacientes(req, res) {
   try {
     const token = getToken(req);
@@ -83,14 +78,15 @@ export async function listarPacientes(req, res) {
     return res.render(viewName, {
       titulo: 'Pacientes',
       pacientes,
+      auth: res.locals?.auth || null,
     });
   } catch (err) {
     console.error('Erro listarPacientes:', err);
-    return res.status(500).send('Erro ao carregar pacientes.');
+    return res.status(500).render('errors/500', { titulo: 'Erro', erro: err });
   }
 }
 
-/** GET /pacientes/_list.json -> lista leve para auto-refresh */
+/** GET /pacientes/_list.json */
 export async function listarPacientesJson(req, res) {
   try {
     const token = getToken(req);
@@ -114,13 +110,18 @@ export async function listarPacientesJson(req, res) {
   }
 }
 
-/** GET /pacientes/:id -> detalhe JSON */
+/** GET /pacientes/:id */
 export async function pacienteDetalhe(req, res) {
   try {
     const token = getToken(req);
     if (!token) return res.status(401).json({ error: 'Sem token.' });
 
     const { id } = req.params;
+
+    // Proteção extra: se por algum motivo cair aqui com a palavra reservada
+    if (id === 'busca' || id === '_list.json') {
+      return res.status(400).json({ error: 'Parâmetro inválido.' });
+    }
 
     const { data } = await getFirstAvailable(token, [
       `/patients/${id}`,
@@ -143,7 +144,7 @@ export async function pacienteDetalhe(req, res) {
   }
 }
 
-/** POST /pacientes -> proxy para /auth/register/patient */
+/** POST /pacientes */
 export async function criarPaciente(req, res) {
   try {
     const token = getToken(req);
@@ -179,5 +180,55 @@ export async function criarPaciente(req, res) {
     console.error('Erro criarPaciente:', err);
     const status = parseStatusFromError(err) ?? 422;
     return res.status(status >= 500 ? 422 : status).json({ error: 'Erro ao criar paciente.' });
+  }
+}
+
+/** POST /pacientes/:id/reset-senha */
+export async function resetSenhaPaciente(req, res) {
+  try {
+    const token = getToken(req);
+    if (!token) return res.status(401).json({ ok: false, message: 'Sem token.' });
+
+    const { id } = req.params;
+    const payload = await apiPost(`/users/${id}/reset-password`, token, {});
+    return res.json({
+      ok: true,
+      message: payload?.message || 'Senha resetada.',
+      targetUserId: payload?.targetUserId ?? Number(id),
+      targetRole: payload?.targetRole ?? 'PACIENTE',
+      temporaryPasswordHint: payload?.temporaryPasswordHint || null,
+    });
+  } catch (err) {
+    console.error('Erro resetSenhaPaciente:', err);
+    const status = parseStatusFromError(err) ?? 500;
+    return res.status(status).json({
+      ok: false,
+      message: err?.payload?.message || err?.payload?.error || err?.message || 'Falha ao resetar senha.',
+    });
+  }
+}
+
+/** GET /pacientes/busca?q=termo -> proxy para /patients?q= */
+export async function buscarPacientes(req, res) {
+  try {
+    const token = getToken(req);
+    if (!token) return res.status(401).json({ error: 'Sem token.' });
+
+    const q = String(req.query?.q || '').trim();
+    if (!q) return res.json({ items: [] });
+
+    // Encaminha para a API oficial
+    const { data } = await getFirstAvailable(token, [
+      `/patients?q=${encodeURIComponent(q)}`,
+    ]);
+
+    const arr = Array.isArray(data) ? data : (data?.data ?? data?.items ?? []);
+    const pacientes = (arr || []).map(normalizePatient).filter(Boolean);
+
+    return res.json({ items: pacientes });
+  } catch (err) {
+    console.error('Erro buscarPacientes:', err);
+    const status = parseStatusFromError(err) ?? 500;
+    return res.status(status).json({ error: 'Erro na busca.' });
   }
 }

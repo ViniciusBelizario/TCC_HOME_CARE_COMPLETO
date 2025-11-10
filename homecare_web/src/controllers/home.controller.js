@@ -2,8 +2,9 @@
 import { loginService } from '../services/auth.service.js';
 
 export const home = (req, res) => {
-  // área protegida (ensureAuth já garante), render normal com layout padrão
-  res.render('home', { titulo: 'Dashboard' });
+  // Área protegida (ensureAuth já garante). Renderiza a nova Home.
+  // res.locals.auth/user já vêm do seu setViewLocals (seu layout usa isso).
+  res.render('home/index', { titulo: 'Home' });
 };
 
 export const login = (req, res) => {

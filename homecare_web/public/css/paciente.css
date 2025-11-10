@@ -1,190 +1,65 @@
-/* ===== Container / Cabeçalho ===== */
-.pacientes-container {
-  max-width: 900px;
-  margin: 24px auto;                 /* perto do topo */
-  font-family: "Open Sans", sans-serif;
-}
+/* igual ao que te enviei (inclui botões, modal e toast) */
+.pacientes-container { padding: 16px; }
+.pacientes-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 
-.pacientes-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
+.pacientes-table table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #ececec; border-radius: 10px; overflow: hidden; }
+.pacientes-table thead th { text-align: left; font-weight: 700; font-size: .9rem; background: #f7f7f9; padding: 10px 12px; border-bottom: 1px solid #ececec; }
+.pacientes-table tbody td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; }
+.pacientes-table tbody tr:last-child td { border-bottom: 0; }
 
-.pacientes-header h1 {
-  font-size: 1.8rem;
-  color: #1a1a1a;
-}
+.btn { border: 1px solid transparent; border-radius: 8px; padding: 8px 12px; font-weight: 600; cursor: pointer; transition: transform .05s ease, filter .15s ease, background .15s ease; }
+.btn:active { transform: translateY(1px); }
+.btn:disabled { opacity: .6; cursor: not-allowed; }
+.btn--sm { padding: 6px 10px; font-size: .9rem; }
+.btn--primary { background: #4f46e5; color: #fff; border-color: #4f46e5; }
+.btn--primary:hover { filter: brightness(.98); }
+.btn--ghost { background: #fff; color: #333; border-color: #d9d9d9; }
+.btn--ghost:hover { background: #f7f7f7; }
+.btn--warning { background: #f9c846; border-color: #e0b438; color: #3c2e00; }
+.btn--warning:hover { filter: brightness(.98); }
 
-/* ===== Botões ===== */
-.btn {
-  font-family: "Open Sans", sans-serif;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background .2s, border-color .2s, color .2s;
-}
-
-.btn--primary {
-  background-color: #007bff;
-  color: #fff;
-  padding: 10px 18px;
-  font-weight: 600;
-}
-.btn--primary:hover { background-color: #005fcc; }
-
-.btn--sm {
-  background: #007bff;
-  color: #fff;
-  font-size: 0.85rem;
-  padding: 6px 12px;
-  border-radius: 4px;
-}
-.btn--sm:hover { background: #0068d7; }
-
-.btn--ghost {
-  background: transparent;
-  border: 1px solid #ccc;
-  color: #333;
-  padding: 8px 14px;
-}
-.btn--ghost:hover { border-color: #888; }
-
-/* ===== Tabela ===== */
-.pacientes-table table {
-  width: 100%;
-  border-collapse: collapse;
-  background: #fff;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-  border-radius: 6px;
-  overflow: hidden;
-}
-
-.pacientes-table thead {
-  background-color: #f7f9fc;
-  font-weight: 600;
-  color: #333;
-}
-
-.pacientes-table th,
-.pacientes-table td {
-  padding: 12px 16px;
-  text-align: left;
-}
-
-.pacientes-table tr:not(:last-child) {
-  border-bottom: 1px solid #ececec;
-}
-
-/* ===== Modal (centralização e responsividade) ===== */
-.modal-root { display: none; }
+.modal-root { position: fixed; inset: 0; display: none; z-index: 1000; }
 .modal-root.is-open { display: block; }
+.modal-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,.35); }
+.modal-slot { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.modal { width: min(760px, 96vw); }
+.modal__card { background: #fff; border: 1px solid #ececec; border-radius: 12px; box-shadow: 0 16px 40px rgba(0,0,0,.12); padding: 16px; }
+.modal__title { margin: 0 0 12px 0; font-size: 1.25rem; }
+.modal__footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
 
-/* fundo desfocado */
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.45);
-  backdrop-filter: blur(5px);
-  z-index: 1000;
-}
+.detail-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; }
+.detail-list .row { display: contents; }
+.detail-list .label { font-weight: 700; color: #444; }
+.detail-list .value { color: #222; word-break: break-word; }
+@media (max-width: 640px) { .detail-list { grid-template-columns: 1fr; } }
 
-/* grid centraliza; rolagem de segurança */
-.modal-slot {
-  position: fixed;
-  inset: 0;
-  z-index: 1001;
-  display: grid;
-  place-items: center;      /* centro vertical + horizontal */
-  padding: 16px;            /* respiro nas bordas */
-  overflow: auto;           /* se faltar altura, rola */
-  -webkit-overflow-scrolling: touch;
-}
+.form .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+.label { font-weight: 600; font-size: .9rem; color: #444; }
+.input { border: 1px solid #d9d9d9; border-radius: 8px; padding: 10px 12px; outline: none; }
+.input:focus { border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,.12); }
+.form__error { color: #b91c1c; font-weight: 600; margin-top: 4px; }
 
-/* cartão do modal */
-.modal__card {
-  background: #fff;
-  width: clamp(320px, 92vw, 560px);  /* responsivo; até 560px no desktop */
-  max-height: 92svh;                 /* cabe na tela (viewport real no mobile) */
-  overflow: auto;                    /* scroll interno quando necessário */
-  box-sizing: border-box;
-  padding: 28px 24px;
-  border-radius: 14px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
-  margin: 0;
-  animation: modalDrop .22s ease-out;
-}
+.toast-stack { position: fixed; right: 16px; bottom: 16px; display: flex; flex-direction: column; gap: 12px; z-index: 2000; }
+.toast { position: relative; min-width: 280px; max-width: 420px; background: #fff; border: 1px solid #ececec; border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.08); padding: 12px 14px 12px 12px; display: grid; grid-template-columns: 6px 1fr auto; align-items: start; gap: 12px; animation: toast-in .18s ease-out; }
+.toast--hide { animation: toast-out .22s ease-in forwards; }
+.toast__bar { width: 6px; height: 100%; border-radius: 6px; }
+.toast__content { padding-right: 8px; }
+.toast__title { display: block; margin: 0 0 4px 0; font-weight: 700; font-size: 0.95rem; }
+.toast__message { margin: 0; font-size: 0.9rem; line-height: 1.35; color: #333; }
+.toast__close { border: 0; background: transparent; font-size: 20px; cursor: pointer; color: #666; padding: 2px 6px; line-height: 1; }
+.toast__close:hover { color: #000; }
+.toast--success { border-color: #d5f3da; }
+.toast--success .toast__bar { background: #2ecc71; }
+.toast--danger  { border-color: #ffd5d5; }
+.toast--danger  .toast__bar { background: #e74c3c; }
+.toast--info    { border-color: #d6ecff; }
+.toast--info    .toast__bar { background: #3498db; }
+.toast--warning { border-color: #ffe9c4; }
+.toast--warning .toast__bar { background: #f1c40f; }
 
-@keyframes modalDrop {
-  from { opacity: 0; transform: translateY(-8%); }
-  to   { opacity: 1; transform: translateY(0); }
-}
+.search { display: flex; align-items: center; gap: 8px; }
+.search .input { min-width: 260px; }
 
-.modal__title {
-  font-size: 1.35rem;
-  margin-bottom: 18px;
-  text-align: center;
-  color: #1a1a1a;
-  font-weight: 700;
-}
-
-.modal__footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 18px;
-}
-
-/* ===== Form e Detalhes ===== */
-.form .field { margin-bottom: 12px; }
-
-.form .label {
-  display: block;
-  font-weight: 600;
-  margin-bottom: 6px;
-  color: #333;
-}
-
-.form .input {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #d9e1ea;
-  border-radius: 6px;
-  font-family: inherit;
-  box-sizing: border-box;
-}
-.form .input:focus {
-  outline: none;
-  border-color: #8bb4ff;
-  box-shadow: 0 0 0 3px rgba(0,123,255,0.15);
-}
-
-.form__error {
-  color: #b3261e;
-  background: #fdecea;
-  border: 1px solid #f5c2c0;
-  border-radius: 6px;
-  padding: 8px 10px;
-  font-size: 0.9rem;
-  margin-top: 4px;
-}
-
-/* lista de detalhes */
-.detail-list .row {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 8px;
-}
-.detail-list .label { font-weight: 600; color: #555; }
-.detail-list .value { color: #333; }
-
-/* evita overflow horizontal em telas estreitas */
-.form .input,
-.detail-list .value,
-.detail-list .label {
-  max-width: 100%;
-  word-break: break-word;
-  box-sizing: border-box;
-}
+@media (max-width: 640px) { .search .input { min-width: 0; width: 100%; } }
+@keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes toast-out { to { opacity: 0; transform: translateY(8px); } }

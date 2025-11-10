@@ -10,5 +10,7 @@ router.post('/doctor', cadastroController.postCreateDoctor);
 router.get('/doctors', cadastroController.getDoctors);
 router.get('/attendants', cadastroController.getAttendants);
 
+// Reset de senha (ADMIN) -> proxy para /users/:id/reset-password
+router.post('/users/:id/reset-senha', cadastroController.postResetUserPassword);
 
 export default router;

@@ -1,11 +1,13 @@
-<!--src\views\pacientes\index.ejs-->
-<%- include('../partials/_head', { titulo }) %>
-
 <link rel="stylesheet" href="/css/paciente.css">
 
 <section class="pacientes-container">
   <div class="pacientes-header">
-    <h1>Pacientes</h1>
+    <h1><%= titulo %></h1>
+
+    <div class="search">
+      <input id="q" class="input" placeholder="Buscar por nome ou CPF" />
+    </div>
+
     <button class="btn btn--primary" id="btnCadastrar">Cadastrar Paciente</button>
   </div>
 
@@ -20,7 +22,7 @@
         </tr>
       </thead>
       <tbody id="pacientesTbody">
-        <% pacientes.forEach(p => { %>
+        <% (pacientes || []).forEach(p => { %>
           <tr data-id="<%= p.id %>">
             <td><%= p.id %></td>
             <td><%= p.name %></td>
@@ -33,7 +35,8 @@
   </div>
 </section>
 
-<!-- Modal root -->
+<div id="toast-stack" class="toast-stack" aria-live="polite" aria-atomic="true"></div>
+
 <div class="modal-root">
   <div class="modal-backdrop" data-close></div>
   <div class="modal-slot"></div>
@@ -41,7 +44,6 @@
 
 <script>
   window.PACIENTES = <%- JSON.stringify(pacientes || []) %>;
+  window.AUTH = <%- JSON.stringify(auth || {}) %>;
 </script>
 <script src="/js/paciente.js"></script>
-
-<%- include('../partials/_foot') %>

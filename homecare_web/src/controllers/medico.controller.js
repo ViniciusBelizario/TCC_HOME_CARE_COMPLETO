@@ -1,153 +1,176 @@
-// src/controllers/medico.controller.js
-import { apiGet, apiPost, apiPatch } from '../services/api.service.js';
+import fetch from 'node-fetch';
+import { apiGet, apiPatch, apiPost } from '../services/api.service.js';
 
-/* ============= Utils ============= */
+const API_BASE = process.env.API_BASE_URL || 'http://localhost:3333/api';
+
+/* ---------------- helpers ---------------- */
 function getToken(req, res) {
-  if (req.session?.token) return req.session.token;
-  const auth = req.headers?.authorization || '';
-  if (auth.toLowerCase().startsWith('bearer ')) return auth.slice(7).trim();
-  return res.locals?.auth?.token || null;
+  // Authorization: Bearer ...
+  const authHdr = (req.headers?.authorization || '').trim();
+  const bearer =
+    authHdr.toLowerCase().startsWith('bearer ') ? authHdr.slice(7).trim() : null;
+
+  // session / locals com várias chaves possíveis (cobrimos variações)
+  const sessionToken =
+    req.session?.token ||
+    req.session?.auth?.token ||
+    req.session?.user?.token ||
+    req.session?.user?.accessToken ||
+    null;
+
+  const cookieToken = req.cookies?.auth_token || null; // ok se undefined
+  const localsToken =
+    res.locals?.auth?.token ||
+    res.locals?.token ||
+    null;
+
+  return bearer || sessionToken || cookieToken || localsToken || null;
 }
 
-function startEndOfTodayLocal() {
+function startOfTodayLocal() {
   const now = new Date();
-  const y = now.getFullYear();
-  const m = now.getMonth();
-  const d = now.getDate();
-  return {
-    start: new Date(y, m, d, 0, 0, 0, 0),
-    end:   new Date(y, m, d, 23, 59, 59, 999),
-  };
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+}
+function endOfTodayLocal() {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+}
+function isWithin(dateISO, start, end) {
+  const d = new Date(dateISO);
+  const t = d.getTime();
+  return !Number.isNaN(t) && t >= start.getTime() && t <= end.getTime();
 }
 
-function parseStatusFromError(err) {
-  const m = /=>\s*(\d{3}):/.exec(err?.message || '');
-  return m ? Number(m[1]) : 500;
-}
-
-function normalizeAppointment(raw) {
-  const patient = raw.patient || {};
-  const start = new Date(raw.startsAt);
-  const phone = patient?.patientProfile?.phone || patient?.phone || '-';
-
-  // Novo: normaliza a observação do médico (quando vier)
-  const po = raw.patientObservation || null;
-  const patientObservation = po ? {
-    note: po.note || '',
-    createdAt: po.createdAt || null,
-    doctorId: po.doctor?.id ?? null,
-    doctorName: po.doctor?.name ?? '',
-  } : null;
-
-  return {
-    appointmentId: raw.id,
-    status: String(raw.status || '').toUpperCase(),
-    startsAt: raw.startsAt,
-    endsAt: raw.endsAt || raw.endsAt,
-    timeDisplay: start.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-    patientId: patient.id,
-    patientName: patient.name,
-    patientPhone: phone,
-    patientAddressFull: raw.patientAddressFull || raw.patientAddress || '-',
-    notes: raw.notes || '',
-    patientObservation, // <- incluído
-    _raw: raw,
-  };
-}
-
-/* ============= Controllers ============= */
-
-// Página
+/* ---------------- página ---------------- */
 export async function getPacientesHojePage(req, res) {
-  try {
-    return res.render('medico/pacientes-hoje', {
-      titulo: 'Pacientes de Hoje',
-      auth: res.locals?.auth || null,
-    });
-  } catch (err) {
-    console.error('Erro getPacientesHojePage:', err);
-    return res.status(500).render('errors/500', { titulo: 'Erro interno' });
-  }
+  res.render('medico/pacientes-hoje', {
+    titulo: 'Pacientes de Hoje',
+    auth: res.locals?.auth || {}
+  });
 }
 
-// JSON do dia: retorna "open" (CONFIRMED) e "completed" (COMPLETED)
-export async function getPacientesHojeJson(req, res) {
+/* ---------------- dados do dia ---------------- */
+export async function getPacientesHojeData(req, res) {
   try {
     const token = getToken(req, res);
-    if (!token) return res.status(401).json({ error: 'Sem token.' });
+    if (!token) return res.status(401).json({ error: 'unauthorized' });
 
-    const data = await apiGet('/appointments/my', token);
-    const arr = Array.isArray(data) ? data : (data?.items || []);
+    const all = await apiGet('/appointments/my', token);
+    const items = Array.isArray(all) ? all : [];
 
-    const { start, end } = startEndOfTodayLocal();
-    const today = arr.filter(a => {
-      const dt = new Date(a.startsAt);
-      return dt >= start && dt <= end;
-    });
+    const start = startOfTodayLocal();
+    const end = endOfTodayLocal();
 
-    const confirmed = today.filter(a => String(a.status).toUpperCase() === 'CONFIRMED');
-    const completed = today.filter(a => String(a.status).toUpperCase() === 'COMPLETED');
+    // Hoje (horário local)
+    const today = items.filter(a => isWithin(a?.startsAt, start, end));
 
-    return res.json({
-      open: confirmed.map(normalizeAppointment),
-      completed: completed.map(normalizeAppointment),
-    });
-  } catch (err) {
-    console.error('Erro getPacientesHojeJson:', err);
-    const status = parseStatusFromError(err);
-    return res.status(status).json({ error: 'Erro ao buscar pacientes do dia.' });
+    // Abertas: somente CONFIRMED (PENDING não deve aparecer para o médico)
+    const open = today.filter(a => a.status === 'CONFIRMED');
+    const completed = today.filter(a => a.status === 'COMPLETED');
+
+    return res.json({ open, completed });
+  } catch (e) {
+    console.error('getPacientesHojeData error:', e);
+    return res.status(500).json({ error: 'load_error' });
   }
 }
 
-// Exames
-export async function getExamesPaciente(req, res) {
-  try {
-    const token = getToken(req, res);
-    if (!token) return res.status(401).json({ error: 'Sem token.' });
-
-    const { patientId } = req.params;
-    const list = await apiGet(`/exams/patient/${patientId}`, token);
-    const items = Array.isArray(list) ? list : (list?.items || list?.data || []);
-    return res.json({ items });
-  } catch (err) {
-    console.error('Erro getExamesPaciente:', err);
-    const status = parseStatusFromError(err);
-    return res.status(status).json({ error: 'Erro ao buscar exames.' });
-  }
-}
-
-// Observação
-export async function postObservacaoPaciente(req, res) {
-  try {
-    const token = getToken(req, res);
-    if (!token) return res.status(401).json({ error: 'Sem token.' });
-
-    const { patientId } = req.params;
-    const note = String(req.body?.note || '').trim();
-    if (!note) return res.status(400).json({ error: 'Observação não pode estar vazia.' });
-
-    const result = await apiPost(`/patients/${patientId}/observations`, token, { note });
-    return res.status(201).json({ ok: true, data: result });
-  } catch (err) {
-    console.error('Erro postObservacaoPaciente:', err);
-    const status = parseStatusFromError(err);
-    return res.status(status).json({ error: 'Erro ao salvar observação.' });
-  }
-}
-
-// Finalizar -> PATCH /appointments/:id/status {status:"COMPLETED"}
+/* ---------------- finalizar consulta ---------------- */
 export async function finalizarConsulta(req, res) {
   try {
     const token = getToken(req, res);
-    if (!token) return res.status(401).json({ ok: false, message: 'Sem token.' });
+    if (!token) return res.status(401).json({ error: 'unauthorized' });
 
-    const { appointmentId } = req.params;
-    const payload = await apiPatch(`/appointments/${appointmentId}/status`, token, { status: 'COMPLETED' });
+    const { id } = req.params;
+    const out = await apiPatch(`/appointments/${id}/status`, token, { status: 'COMPLETED' });
+    return res.json(out);
+  } catch (e) {
+    console.error('finalizarConsulta:', e);
+    return res.status(400).json({ error: 'finish_error' });
+  }
+}
 
-    return res.json({ ok: true, data: payload || { status: 'COMPLETED' } });
-  } catch (err) {
-    console.error('Erro finalizarConsulta:', err);
-    const status = parseStatusFromError(err);
-    return res.status(status).json({ ok: false, message: 'Não foi possível finalizar. A consulta precisa estar CONFIRMED.' });
+/* ---------------- observações ---------------- */
+export async function criarObservacao(req, res) {
+  try {
+    const token = getToken(req, res);
+    if (!token) return res.status(401).json({ error: 'unauthorized' });
+
+    const { patientId } = req.params;
+    const { note } = req.body || {};
+    if (!note) return res.status(400).json({ error: 'note é obrigatório' });
+
+    const data = await apiPost(`/patients/${patientId}/observations`, token, { note });
+    return res.status(201).json(data);
+  } catch (e) {
+    console.error('criarObservacao:', e);
+    return res.status(400).json({ error: 'create_obs_error' });
+  }
+}
+
+export async function listarObservacoes(req, res) {
+  try {
+    const token = getToken(req, res);
+    if (!token) return res.status(401).json({ error: 'unauthorized' });
+
+    const { patientId } = req.params;
+    const page = req.query.page ?? 1;
+    const pageSize = req.query.pageSize ?? 20;
+
+    const data = await apiGet(`/patients/${patientId}/observations`, token, { page, pageSize });
+    return res.json(data);
+  } catch (e) {
+    console.error('listarObservacoes:', e);
+    return res.status(400).json({ error: 'list_obs_error' });
+  }
+}
+
+/* ---------------- exames (proxy com token) ---------------- */
+async function pipeBinary(apiUrl, token, res, forceDownload = false) {
+  const r = await fetch(apiUrl, { headers: { Authorization: `Bearer ${token}` } });
+
+  res.status(r.status);
+  const ct = r.headers.get('content-type') || 'application/octet-stream';
+  res.setHeader('Content-Type', ct);
+
+  const disp = r.headers.get('content-disposition');
+  if (forceDownload) {
+    // Força attachment mantendo nome quando possível
+    let filename = 'arquivo';
+    const m = disp && disp.match(/filename\*?=(?:UTF-8'')?("?)([^";]+)\1/i);
+    if (m) filename = decodeURIComponent(m[2]);
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  } else if (disp) {
+    res.setHeader('Content-Disposition', disp);
+  }
+
+  const cl = r.headers.get('content-length');
+  if (cl) res.setHeader('Content-Length', cl);
+
+  if (!r.body) return res.end();
+  r.body.pipe(res);
+}
+
+export async function proxyExamView(req, res) {
+  try {
+    const token = getToken(req, res);
+    if (!token) return res.status(401).send('unauthorized');
+    const { id } = req.params;
+    await pipeBinary(`${API_BASE}/exams/${id}/view`, token, res, false);
+  } catch (e) {
+    console.error('proxyExamView:', e);
+    res.status(502).send('Falha ao carregar exame.');
+  }
+}
+
+export async function proxyExamDownload(req, res) {
+  try {
+    const token = getToken(req, res);
+    if (!token) return res.status(401).send('unauthorized');
+    const { id } = req.params;
+    await pipeBinary(`${API_BASE}/exams/${id}/download`, token, res, true);
+  } catch (e) {
+    console.error('proxyExamDownload:', e);
+    res.status(502).send('Falha ao baixar exame.');
   }
 }

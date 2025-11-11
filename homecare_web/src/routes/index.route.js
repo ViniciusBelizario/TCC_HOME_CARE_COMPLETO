@@ -4,7 +4,7 @@ import * as Home from '../controllers/home.controller.js';
 
 const router = Router();
 
-// Rotas públicas de autenticação
+// Login/logout
 router.get('/login', Home.login);
 router.post('/login', Home.postLogin);
 router.post('/logout', Home.logout);

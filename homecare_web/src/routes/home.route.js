@@ -5,7 +5,11 @@ import { ensureAuth } from '../middlewares/auth.middleware.js';
 
 const router = Router();
 
-// Home (exige login)
+// Home (protegida)
 router.get('/', ensureAuth, Home.home);
+
+// Troca de senha obrigatória
+router.get('/change-password', Home.getChangePassword);
+router.post('/change-password', Home.postChangePassword);
 
 export default router;

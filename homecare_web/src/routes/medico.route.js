@@ -1,27 +1,35 @@
-// src/routes/medico.route.js
 import { Router } from 'express';
 import { ensureAuth, allowRoles } from '../middlewares/auth.middleware.js';
 import {
   getPacientesHojePage,
-  getPacientesHojeJson,
-  getExamesPaciente,
-  postObservacaoPaciente,
-  finalizarConsulta,          // <- NOVO
+  getPacientesHojeData,
+  finalizarConsulta,
+  criarObservacao,
+  listarObservacoes,
+  proxyExamView,
+  proxyExamDownload
 } from '../controllers/medico.controller.js';
 
 const router = Router();
 
-router.use(ensureAuth);
+// Todas as rotas de médico: exige login e papel MEDICO
+router.use(ensureAuth, allowRoles('medico'));
 
-// Página principal
-router.get('/pacientes-hoje', allowRoles('medico', 'admin'), getPacientesHojePage);
-// Lista JSON
-router.get('/pacientes-hoje/_list.json', allowRoles('medico', 'admin'), getPacientesHojeJson);
-// Exames do paciente
-router.get('/pacientes/:patientId/exams', allowRoles('medico', 'admin'), getExamesPaciente);
-// Nova observação
-router.post('/pacientes/:patientId/observations', allowRoles('medico', 'admin'), postObservacaoPaciente);
-// Finalizar consulta (proxy PATCH -> POST com body)
-router.post('/consultas/:appointmentId/finalizar', allowRoles('medico', 'admin'), finalizarConsulta);
+// Página
+router.get('/pacientes-hoje', getPacientesHojePage);
+
+// Dados (abertas + finalizadas do dia)
+router.get('/pacientes-hoje/data', getPacientesHojeData);
+
+// Finalizar consulta (CONFIRMED -> COMPLETED)
+router.patch('/consultas/:id/finalizar', finalizarConsulta);
+
+// Observações do paciente
+router.post('/pacientes/:patientId/observacoes', criarObservacao);
+router.get('/pacientes/:patientId/observacoes', listarObservacoes);
+
+// Proxies de exames (inline e download) mantendo o token
+router.get('/exames/:id/view', proxyExamView);
+router.get('/exames/:id/download', proxyExamDownload);
 
 export default router;

@@ -68,13 +68,42 @@ app.use('/relatorio', relatorioRoute);
 app.use('/medico', medicoRoute);
 app.use('/agenda-medico', agendaMedicoRoute);
 app.use('/', homeRoute);  // / (Home) protegida por ensureAuth
+
 // Protege /cadastro com sessão e papel admin
 app.use('/cadastro', ensureAuth, allowRoles('admin'), cadastroRoutes);
 app.use('/perfil', perfilRouter);
 
-// -------- 404 + Handler de erro --------
-app.use((req, res) => res.status(404).render('home', { titulo: 'Não encontrado' }));
-app.use(errorMiddleware);
+// -------- 404 --------
+// Não tenta renderizar "errors/404" para evitar o erro de lookup.
+// Se aceita HTML, renderiza "home" com título "Não encontrado".
+// Caso contrário, responde JSON.
+app.use((req, res) => {
+  const acceptHtml = (req.headers.accept || '').includes('text/html');
+  if (acceptHtml) {
+    try {
+      return res.status(404).render('home', { titulo: 'Não encontrado' });
+    } catch {
+      // fallback absoluto
+      return res.status(404).send('404 - Página não encontrada');
+    }
+  }
+  return res.status(404).json({ error: 'not_found', path: req.originalUrl });
+});
+
+// -------- Handler de erro --------
+// Nunca chama views inexistentes; usa "home" como fallback quando HTML.
+app.use((err, req, res, next) => {
+  console.error(err);
+  const acceptHtml = (req.headers.accept || '').includes('text/html');
+  if (acceptHtml) {
+    try {
+      return res.status(500).render('home', { titulo: 'Erro' });
+    } catch {
+      return res.status(500).send('500 - Erro interno');
+    }
+  }
+  return res.status(500).json({ error: 'internal_error', message: err?.message || 'erro' });
+});
 
 // -------- Server --------
 const PORT = process.env.PORT || 3001;
